@@ -7,8 +7,9 @@ import Customization from './Customization';
 import AudioPanel from './AudioPanel';
 import ExportPanel from './ExportPanel';
 import YouTubePanel from './YouTubePanel';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, Maximize, Minimize } from 'lucide-react';
 import * as d3 from 'd3';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 interface ChartPanelProps {
   config: ChartConfig;
@@ -33,6 +34,9 @@ export default function ChartPanel({ config, onConfigChange, onRemove }: ChartPa
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [isLooping, setIsLooping] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
 
   const timerRef = useRef<d3.Timer | null>(null);
 
@@ -65,8 +69,12 @@ export default function ChartPanel({ config, onConfigChange, onRemove }: ChartPa
         
         let shouldStop = false;
         if (timeIndexRef.current >= totalFrames - 1) {
-          timeIndexRef.current = totalFrames - 1;
-          shouldStop = true;
+          if (isLooping) {
+            timeIndexRef.current = 0;
+          } else {
+            timeIndexRef.current = totalFrames - 1;
+            shouldStop = true;
+          }
         }
 
         window.dispatchEvent(new CustomEvent('time-update', { detail: timeIndexRef.current }));
@@ -89,7 +97,43 @@ export default function ChartPanel({ config, onConfigChange, onRemove }: ChartPa
       animationFrameId = requestAnimationFrame(animate);
     }
     return () => cancelAnimationFrame(animationFrameId);
-  }, [isPlaying, totalFrames, config.duration, speed]);
+  }, [isPlaying, totalFrames, config.duration, speed, isLooping]);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      chartContainerRef.current?.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  useKeyboardShortcuts({
+    'space': () => {
+      if (isPlaying) {
+        setIsPlaying(false);
+        setCurrentTimeIndex(timeIndexRef.current);
+      } else {
+        if (timeIndexRef.current >= totalFrames - 1) {
+          setCurrentTimeIndex(0);
+        }
+        setIsPlaying(true);
+      }
+    },
+    'f': toggleFullscreen,
+    'l': () => setIsLooping(prev => !prev),
+    'arrowleft': () => setCurrentTimeIndex(prev => Math.max(0, prev - 1)),
+    'arrowright': () => setCurrentTimeIndex(prev => Math.min(totalFrames - 1, prev + 1)),
+  });
 
   const handleDataLoaded = (
     data: DataPoint[], 
@@ -187,8 +231,8 @@ export default function ChartPanel({ config, onConfigChange, onRemove }: ChartPa
           </div>
           
           {config.data.length > 0 ? (
-            <div className="space-y-8">
-              <div className="p-3 bg-zinc-50 dark:bg-[#020202] rounded-[2.5rem] shadow-2xl border border-zinc-200/50 dark:border-white/5">
+            <div className={`space-y-8 ${isFullscreen ? 'p-8 bg-zinc-50 dark:bg-[#020202] overflow-y-auto' : ''}`} ref={chartContainerRef}>
+              <div className={`p-3 bg-zinc-50 dark:bg-[#020202] rounded-[2.5rem] shadow-2xl border border-zinc-200/50 dark:border-white/5 ${isFullscreen ? 'h-[calc(100vh-140px)]' : ''}`}>
                 <RaceChart
                   config={config}
                   isPlaying={isPlaying}
@@ -216,6 +260,10 @@ export default function ChartPanel({ config, onConfigChange, onRemove }: ChartPa
                 onTimeIndexChange={setCurrentTimeIndex}
                 speed={speed}
                 onSpeedChange={setSpeed}
+                isLooping={isLooping}
+                onLoopToggle={() => setIsLooping(!isLooping)}
+                isFullscreen={isFullscreen}
+                onFullscreenToggle={toggleFullscreen}
               />
             </div>
           ) : (

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Pause, SkipBack, SkipForward, RotateCcw, Settings } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, RotateCcw, Repeat, Maximize, Minimize } from 'lucide-react';
 
 interface ControlsProps {
   isPlaying: boolean;
@@ -10,6 +10,10 @@ interface ControlsProps {
   onTimeIndexChange: (index: number) => void;
   speed: number;
   onSpeedChange: (speed: number) => void;
+  isLooping: boolean;
+  onLoopToggle: () => void;
+  isFullscreen: boolean;
+  onFullscreenToggle: () => void;
 }
 
 export default function Controls({
@@ -20,7 +24,11 @@ export default function Controls({
   totalFrames,
   onTimeIndexChange,
   speed,
-  onSpeedChange
+  onSpeedChange,
+  isLooping,
+  onLoopToggle,
+  isFullscreen,
+  onFullscreenToggle
 }: ControlsProps) {
   return (
     <div className="bg-white dark:bg-[#0a0a0a] p-5 rounded-2xl shadow-sm border border-zinc-200/80 dark:border-zinc-800/80 flex flex-col gap-5 transition-colors duration-300">
@@ -54,20 +62,38 @@ export default function Controls({
           >
             <SkipForward className="w-5 h-5" />
           </button>
+          <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-800 mx-2"></div>
+          <button
+            onClick={onLoopToggle}
+            className={`p-2.5 rounded-xl transition-all active:scale-95 ${isLooping ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
+            title="Toggle Loop"
+          >
+            <Repeat className="w-5 h-5" />
+          </button>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Speed</span>
-          <input
-            type="range"
-            min="0.5"
-            max="3"
-            step="0.5"
-            value={speed}
-            onChange={(e) => onSpeedChange(parseFloat(e.target.value))}
-            className="w-24 accent-indigo-500"
-          />
-          <span className="text-sm font-mono text-zinc-600 dark:text-zinc-300 w-8">{speed}x</span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Speed</span>
+            <input
+              type="range"
+              min="0.5"
+              max="3"
+              step="0.5"
+              value={speed}
+              onChange={(e) => onSpeedChange(parseFloat(e.target.value))}
+              className="w-24 accent-indigo-500"
+            />
+            <span className="text-sm font-mono text-zinc-600 dark:text-zinc-300 w-8">{speed}x</span>
+          </div>
+          <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-800 mx-1"></div>
+          <button
+            onClick={onFullscreenToggle}
+            className="p-2.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all active:scale-95"
+            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+          >
+            {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+          </button>
         </div>
       </div>
 
