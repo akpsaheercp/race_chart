@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, BarChart3, Trash2, Sun, Moon } from 'lucide-react';
 import { ChartConfig } from '../types';
-import ChartPanel from './ChartPanel';
+import ChartPanel from '../features/race-chart/components/ChartPanel';
+import { validateConfig } from '../core/configSchema';
 
 export default function Dashboard() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -30,23 +31,13 @@ export default function Dashboard() {
   }, [theme]);
 
   const [charts, setCharts] = useState<ChartConfig[]>([
-    {
+    validateConfig({
       id: '1',
       title: 'Global Population by Country',
       subtitle: '1950 - 2020',
       caption: 'Data source: UN',
-      type: 'bar',
-      data: [],
-      colors: {},
-      maxBars: 10,
-      duration: 500,
-      theme: theme, // Initialize with global theme
-      fontFamily: 'Inter, sans-serif',
-      showAnnotations: false,
-      annotations: {},
-      interpolation: true,
-      fps: 60
-    }
+      theme: theme,
+    })
   ]);
 
   const toggleTheme = () => {
@@ -57,23 +48,10 @@ export default function Dashboard() {
   };
 
   const addChart = () => {
-    const newChart: ChartConfig = {
+    const newChart = validateConfig({
       id: Date.now().toString(),
-      title: 'New Chart',
-      subtitle: '',
-      caption: '',
-      type: 'bar',
-      data: [],
-      colors: {},
-      maxBars: 10,
-      duration: 500,
       theme: theme, // Use current global theme for new charts
-      fontFamily: 'Inter, sans-serif',
-      showAnnotations: false,
-      annotations: {},
-      interpolation: true,
-      fps: 60
-    };
+    });
     setCharts([...charts, newChart]);
   };
 
@@ -86,37 +64,37 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-[#000000] text-zinc-900 dark:text-zinc-100 p-6 selection:bg-indigo-500/30 transition-colors duration-700 ease-in-out relative overflow-hidden">
+    <div className="min-h-screen bg-zinc-50 dark:bg-[#000000] text-zinc-900 dark:text-zinc-100 p-4 sm:p-6 selection:bg-indigo-500/30 transition-colors duration-700 ease-in-out relative overflow-hidden">
       {/* Dynamic Background Gradient */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full blur-[120px] opacity-20 bg-indigo-200 dark:bg-indigo-900/30"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full blur-[120px] opacity-20 bg-emerald-200 dark:bg-emerald-900/30"></div>
       </div>
 
-      <div className="max-w-[1600px] mx-auto space-y-12 relative z-10">
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
-          <div className="flex items-center gap-5">
-            <div className="p-4 bg-indigo-600 rounded-[1.5rem] shadow-2xl shadow-indigo-500/40 rotate-3 hover:rotate-0 transition-transform duration-500">
-              <BarChart3 className="w-8 h-8 text-white" />
+      <div className="max-w-[1600px] mx-auto space-y-8 sm:space-y-12 relative z-10">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 sm:mb-12">
+          <div className="flex items-center gap-3 sm:gap-5">
+            <div className="p-3 sm:p-4 bg-indigo-600 rounded-2xl sm:rounded-[1.5rem] shadow-2xl shadow-indigo-500/40 rotate-3 hover:rotate-0 transition-transform duration-500">
+              <BarChart3 className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
             <div>
-              <h1 className="text-4xl font-black tracking-tighter uppercase italic text-zinc-900 dark:text-white">
+              <h1 className="text-2xl sm:text-4xl font-black tracking-tighter uppercase italic text-zinc-900 dark:text-white leading-none">
                 RaceChart<span className="text-indigo-600">Animator</span>
               </h1>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 font-bold tracking-widest uppercase opacity-80">Cinematic Data Visualization Pro</p>
+              <p className="text-[10px] sm:text-sm text-zinc-500 dark:text-zinc-400 font-bold tracking-widest uppercase opacity-80 mt-1">Cinematic Data Visualization Pro</p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 w-full md:w-auto">
             <button
               onClick={toggleTheme}
-              className="p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+              className="flex-1 md:flex-none p-3 sm:p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white flex items-center justify-center"
               title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
             >
-              {theme === 'dark' ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
+              {theme === 'dark' ? <Sun className="w-5 h-5 sm:w-6 sm:h-6" /> : <Moon className="w-5 h-5 sm:w-6 sm:h-6" />}
             </button>
             <button
               onClick={addChart}
-              className="flex items-center gap-3 py-4 px-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold transition-all shadow-2xl shadow-indigo-500/30 hover:scale-105 active:scale-95"
+              className="flex-[2] md:flex-none flex items-center justify-center gap-3 py-3 sm:py-4 px-6 sm:px-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold transition-all shadow-2xl shadow-indigo-500/30 hover:scale-105 active:scale-95 text-sm sm:text-base"
             >
               <Plus className="w-5 h-5" />
               New Production
@@ -124,19 +102,19 @@ export default function Dashboard() {
           </div>
         </header>
 
-        <div className="space-y-24">
+        <div className="space-y-12 sm:space-y-24">
           {charts.map(chart => (
             <div key={chart.id} className="relative group">
-              <div className="absolute -top-6 -right-6 z-20 opacity-0 group-hover:opacity-100 transition-all duration-300 scale-90 group-hover:scale-100">
+              <div className="absolute -top-4 -right-4 sm:-top-6 sm:-right-6 z-20 opacity-0 group-hover:opacity-100 transition-all duration-300 scale-90 group-hover:scale-100">
                 <button
                   onClick={() => removeChart(chart.id)}
-                  className="p-3 bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-2xl transition-all hover:scale-110"
+                  className="p-2.5 sm:p-3 bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-2xl transition-all hover:scale-110"
                   title="Remove Production"
                 >
-                  <Trash2 className="w-5 h-5" />
+                  <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               </div>
-              <div className="bg-white dark:bg-[#0a0a0a] p-8 rounded-[2.5rem] shadow-2xl border border-zinc-200/50 dark:border-white/5 transition-all duration-500">
+              <div className="transition-all duration-500">
                 <ChartPanel
                   config={chart}
                   onConfigChange={(config) => updateChart(chart.id, config)}

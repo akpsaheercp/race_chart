@@ -1,5 +1,5 @@
 import Papa from 'papaparse';
-import { DataPoint } from './types';
+import { DataPoint } from '../types';
 import * as d3 from 'd3';
 
 export const parseCSV = (csvText: string): DataPoint[] => {
@@ -8,7 +8,6 @@ export const parseCSV = (csvText: string): DataPoint[] => {
 
   if (parsed.data.length === 0) return data;
 
-  // Assume first column is date/time, rest are categories
   const columns = Object.keys(parsed.data[0] as object);
   const dateCol = columns[0];
 
@@ -35,18 +34,10 @@ export const generateColors = (names: string[]): Record<string, string> => {
   return colors;
 };
 
-export const formatNumber = d3.format(',.1f');
-
-// Cinematic Easing: Cubic Bezier Ease-In-Out
-export const easeInOutCubic = (t: number): number => {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-};
-
 export const getInterpolatedFrame = (dateGroups: any[], progress: number): DataPoint[] => {
   const floorIndex = Math.floor(progress);
   const ceilIndex = Math.min(floorIndex + 1, dateGroups.length - 1);
   
-  // Linear interpolation for continuous value growth across year boundaries
   const t = progress - floorIndex;
 
   if (floorIndex === ceilIndex) return dateGroups[floorIndex].values;
@@ -67,10 +58,8 @@ export const getInterpolatedFrame = (dateGroups: any[], progress: number): DataP
         value: start.value + (end.value - start.value) * t
       });
     } else if (start) {
-      // Fade out
       interpolated.push({ ...start, value: start.value * (1 - t) });
     } else if (end) {
-      // Fade in
       interpolated.push({ ...end, value: end.value * t });
     }
   });

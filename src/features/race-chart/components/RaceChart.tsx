@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import * as d3 from 'd3';
-import { ChartConfig, DataPoint } from '../types';
-import { formatNumber, getInterpolatedFrame } from '../utils';
+import { ChartConfig, DataPoint } from '../../../types';
+import { formatNumber } from '../../../shared/utils/formatters';
+import { getInterpolatedFrame } from '../../../core/dataProcessor';
 
 interface RaceChartProps {
   config: ChartConfig;
@@ -90,7 +91,7 @@ export default function RaceChart({ config, isPlaying, currentTimeIndex, onTimeI
   }, [config.fontFamily]);
 
   // State for smooth overtaking
-  const barStatesRef = useRef(new Map<string, { y: number, width: number, value: number }>());
+  const barStatesRef = useRef(new Map<string, { y: number, width: number, value: number, vy: number, vw: number, vv: number }>());
 
   // Update loop
   useEffect(() => {
@@ -125,14 +126,26 @@ export default function RaceChart({ config, isPlaying, currentTimeIndex, onTimeI
         .attr('font-family', config.fontFamily)
         .text(config.subtitle);
 
+      if (config.caption) {
+        headerRef.current!.append('text')
+          .attr('y', 48)
+          .attr('font-size', '11px')
+          .attr('font-weight', '600')
+          .attr('fill', config.theme === 'dark' ? '#52525b' : '#a1a1aa')
+          .attr('font-family', config.fontFamily)
+          .attr('text-transform', 'uppercase')
+          .attr('letter-spacing', '0.05em')
+          .text(config.caption);
+      }
+
       dateLabelRef.current!
         .attr('x', dimensions.width - 40)
         .attr('y', dimensions.height - 40)
-        .attr('font-size', '96px')
+        .attr('font-size', dimensions.width < 600 ? '48px' : '96px')
         .attr('font-weight', '900')
         .attr('letter-spacing', '-0.05em')
         .attr('text-anchor', 'end')
-        .attr('fill', config.theme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.06)')
+        .attr('fill', config.theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.12)')
         .attr('font-family', config.fontFamily);
 
       const currentData = getInterpolatedFrame(dateGroups, index);
@@ -195,12 +208,19 @@ export default function RaceChart({ config, isPlaying, currentTimeIndex, onTimeI
           
           let state = barStates.get(d.name);
           if (!state) {
-            state = { y: 0, width: targetWidth, value: targetStart };
+            state = { y: 0, width: targetWidth, value: targetStart, vy: 0, vw: 0, vv: 0 };
             barStates.set(d.name, state);
           }
 
-          state.value += (targetStart - state.value) * lerpFactor;
-          state.width += (targetWidth - state.width) * lerpFactor;
+          // Spring physics for stacked bars
+          const stiffness = 0.15;
+          const damping = 0.8;
+          
+          state.vv = (state.vv + (targetStart - state.value) * stiffness) * damping;
+          state.value += state.vv;
+          
+          state.vw = (state.vw + (targetWidth - state.width) * stiffness) * damping;
+          state.width += state.vw;
 
           const group = d3.select(this);
           group.attr('transform', `translate(${state.value}, 0)`);
@@ -210,6 +230,7 @@ export default function RaceChart({ config, isPlaying, currentTimeIndex, onTimeI
 
           group.select('.label')
             .attr('x', state.width / 2)
+            .attr('fill', config.theme === 'dark' ? '#ffffff' : '#000000')
             .text(state.width > 40 ? d.name : '');
         });
 
@@ -236,7 +257,7 @@ export default function RaceChart({ config, isPlaying, currentTimeIndex, onTimeI
           .attr('style', 'will-change: transform;')
           .attr('transform', d => {
              const targetY = y(d.name) || 0;
-             barStates.set(d.name, { y: targetY, width: x(d.value), value: d.value });
+             barStates.set(d.name, { y: targetY, width: x(d.value), value: d.value, vy: 0, vw: 0, vv: 0 });
              return `translate(0, ${targetY})`;
           });
 
@@ -279,14 +300,22 @@ export default function RaceChart({ config, isPlaying, currentTimeIndex, onTimeI
           
           let state = barStates.get(d.name);
           if (!state) {
-            state = { y: targetY, width: targetWidth, value: d.value };
+            state = { y: targetY, width: targetWidth, value: d.value, vy: 0, vw: 0, vv: 0 };
             barStates.set(d.name, state);
           }
 
-          // Lerp for smooth overtaking and width changes
-          state.y += (targetY - state.y) * lerpFactor;
-          state.width += (targetWidth - state.width) * lerpFactor;
-          state.value = d.value;
+          // Spring physics for smooth overtaking and width changes
+          const stiffness = 0.15;
+          const damping = 0.8;
+          
+          state.vy = (state.vy + (targetY - state.y) * stiffness) * damping;
+          state.y += state.vy;
+          
+          state.vw = (state.vw + (targetWidth - state.width) * stiffness) * damping;
+          state.width += state.vw;
+          
+          state.vv = (state.vv + (d.value - state.value) * stiffness) * damping;
+          state.value += state.vv;
 
           const group = d3.select(this);
           
@@ -306,8 +335,12 @@ export default function RaceChart({ config, isPlaying, currentTimeIndex, onTimeI
             .attr('stroke', isOvertaking ? (config.theme === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)') : 'none')
             .attr('stroke-width', isOvertaking ? 2 : 0);
 
+          group.select('.label')
+            .attr('fill', config.theme === 'dark' ? '#ffffff' : '#000000');
+
           group.select('.value')
             .attr('x', state.width)
+            .attr('fill', config.theme === 'dark' ? '#ffffff' : '#000000')
             .text(formatNumber(state.value));
         });
 
@@ -333,7 +366,11 @@ export default function RaceChart({ config, isPlaying, currentTimeIndex, onTimeI
   }, [dimensions, dateGroups, config]); // Removed isPlaying and currentTimeIndex
 
   return (
-    <div ref={containerRef} className="w-full h-full min-h-[500px] bg-[#ffffff] dark:bg-[#020202] rounded-[2rem] overflow-hidden relative shadow-2xl border border-zinc-200 dark:border-white/5 transition-all duration-500 group">
+    <div ref={containerRef} className={`w-full h-full min-h-[500px] rounded-[2rem] overflow-hidden relative shadow-2xl border transition-all duration-500 group ${
+      config.theme === 'dark' 
+        ? 'bg-[#020202] border-white/5' 
+        : 'bg-white border-zinc-200'
+    }`}>
       {/* Cinematic Grid Background */}
       <div className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-20" style={{
         backgroundImage: `
@@ -350,7 +387,11 @@ export default function RaceChart({ config, isPlaying, currentTimeIndex, onTimeI
       
       {/* 16:9 Aspect Ratio Enforcer for Preview */}
       <div className="absolute top-6 right-6 flex items-center gap-3 z-10">
-        <div className="bg-white/80 dark:bg-black/60 backdrop-blur-xl text-zinc-900 dark:text-white/90 text-[10px] font-bold tracking-widest px-4 py-2 rounded-full border border-zinc-200/50 dark:border-white/10 flex items-center gap-2.5 shadow-2xl transition-all group-hover:scale-105">
+        <div className={`backdrop-blur-xl text-[10px] font-bold tracking-widest px-4 py-2 rounded-full border flex items-center gap-2.5 shadow-2xl transition-all group-hover:scale-105 ${
+          config.theme === 'dark'
+            ? 'bg-black/60 text-white/90 border-white/10'
+            : 'bg-white/90 text-zinc-900 border-zinc-200'
+        }`}>
           <div className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-zinc-400'}`}></div>
           MASTER PREVIEW • 60 FPS
         </div>
@@ -358,10 +399,18 @@ export default function RaceChart({ config, isPlaying, currentTimeIndex, onTimeI
 
       {/* Bottom Status Bar */}
       <div className="absolute bottom-6 left-6 flex items-center gap-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <div className="bg-black/40 backdrop-blur-md px-3 py-1 rounded-md border border-white/5 text-[9px] font-mono text-white/40 uppercase tracking-tighter">
+        <div className={`backdrop-blur-md px-3 py-1 rounded-md border text-[9px] font-mono uppercase tracking-tighter ${
+          config.theme === 'dark'
+            ? 'bg-black/40 border-white/5 text-white/40'
+            : 'bg-zinc-900/10 border-black/5 text-zinc-900/60'
+        }`}>
           Bitrate: 12.4 Mbps
         </div>
-        <div className="bg-black/40 backdrop-blur-md px-3 py-1 rounded-md border border-white/5 text-[9px] font-mono text-white/40 uppercase tracking-tighter">
+        <div className={`backdrop-blur-md px-3 py-1 rounded-md border text-[9px] font-mono uppercase tracking-tighter ${
+          config.theme === 'dark'
+            ? 'bg-black/40 border-white/5 text-white/40'
+            : 'bg-zinc-900/10 border-black/5 text-zinc-900/60'
+        }`}>
           Codec: H.264
         </div>
       </div>
@@ -371,12 +420,9 @@ export default function RaceChart({ config, isPlaying, currentTimeIndex, onTimeI
         <img 
           src={config.watermarkUrl} 
           alt="watermark" 
-          className="absolute bottom-6 left-6 h-10 opacity-20 pointer-events-none grayscale" 
+          className="absolute bottom-6 right-6 h-10 opacity-20 pointer-events-none grayscale" 
         />
       )}
-      <div className="absolute top-6 right-6 px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-full text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
-        16:9 • 1080p Preview
-      </div>
     </div>
   );
 }
