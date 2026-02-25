@@ -1,0 +1,42 @@
+export interface DataPoint {
+  date: string;
+  name: string;
+  value: number;
+  category?: string;
+  entity?: string; // For multi-entity datasets like USA vs China
+}
+
+export interface ChartConfig {
+  id: string;
+  title: string;
+  subtitle: string;
+  caption: string;
+  type: 'bar' | 'column' | 'stacked' | 'bubble' | 'pie';
+  data: DataPoint[];
+  colors: Record<string, string>;
+  maxBars: number;
+  duration: number;
+  theme: 'light' | 'dark';
+  logoUrl?: string;
+  watermarkUrl?: string;
+  fontFamily: string;
+  showAnnotations: boolean;
+  annotations: Record<string, string>;
+  interpolation: boolean;
+  fps: number;
+  entityFilter?: string;
+}
+
+export interface AudioConfig {
+  script: string;
+  voiceoverUrl?: string;
+  bgmUrl?: string;
+  bgmVolume: number;
+  loopBgm: boolean;
+}
+
+export interface YouTubeMetadata {
+  title: string;
+  description: string;
+  tags: string[];
+}

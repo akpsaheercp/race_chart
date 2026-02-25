@@ -1,0 +1,5 @@
+{
+  "name": "RaceChart Animator",
+  "description": "Create, customize, and export animated race charts with AI voiceovers and YouTube integration.",
+  "requestFramePermissions": ["camera", "microphone"]
+}
