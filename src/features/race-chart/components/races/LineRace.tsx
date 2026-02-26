@@ -20,14 +20,17 @@ export default function LineRace({ svgRef, config, isPlaying, currentTimeIndex, 
     
     const layer = svg.insert('g', '.overlay-layer')
       .attr('class', 'race-layer')
-      .attr('transform', `translate(${margin.left},${margin.top})`);
+      .attr('transform', `translate(${margin.left},${margin.top})`)
+      .style('opacity', 0);
+      
+    layer.transition().duration(300).style('opacity', 1);
       
     gRef.current = layer;
     xAxisGRef.current = layer.append('g').attr('class', 'x-axis');
     yAxisGRef.current = layer.append('g').attr('class', 'y-axis');
 
     return () => {
-      layer.remove();
+      layer.transition().duration(300).style('opacity', 0).remove();
     };
   }, [config.fontFamily, dimensions]);
 
@@ -169,7 +172,7 @@ export default function LineRace({ svgRef, config, isPlaying, currentTimeIndex, 
       linesUpdate.each(function(d) {
         let state = lineStates.get(d.name);
         if (!state) {
-          state = { path: d.path, value: d.currentValue, vv: 0 };
+          state = { path: d.path, value: 0, vv: 0 };
           lineStates.set(d.name, state);
         }
 
@@ -200,8 +203,16 @@ export default function LineRace({ svgRef, config, isPlaying, currentTimeIndex, 
             .attr('fill', config.theme === 'dark' ? '#ffffff' : '#000000')
             .text(d.name);
 
+          const vVal = state.vv;
+          let arrow = '';
+          let arrowColor = '';
+          if (Math.abs(vVal) > 0.1) {
+              arrow = vVal > 0 ? ' ▲' : ' ▼';
+              arrowColor = vVal > 0 ? '#10b981' : '#ef4444';
+          }
+
           const valueText = group.select('.value')
-            .text(formatNumber(state.value));
+            .html(`${formatNumber(state.value)}<tspan fill="${arrowColor}" font-size="0.8em">${arrow}</tspan>`);
 
           if (isVertical) {
             label

@@ -7,6 +7,13 @@ import BubbleRace from './races/BubbleRace';
 import PieRace from './races/PieRace';
 import AreaRace from './races/AreaRace';
 import MapRace from './races/MapRace';
+import TreemapRace from './races/TreemapRace';
+import RadialRace from './races/RadialRace';
+import BumpRace from './races/BumpRace';
+import StackedAreaRace from './races/StackedAreaRace';
+import ScatterRace from './races/ScatterRace';
+import SpiralRace from './races/SpiralRace';
+import NetworkRace from './races/NetworkRace';
 
 interface RaceChartProps {
   config: ChartConfig;
@@ -324,6 +331,13 @@ export const RaceChart = React.forwardRef<SVGSVGElement, RaceChartProps>(({ conf
       {config.type === 'pie' && <PieRace {...raceProps} />}
       {config.type === 'area' && <AreaRace {...raceProps} />}
       {config.type === 'map' && <MapRace {...raceProps} />}
+      {config.type === 'treemap' && <TreemapRace {...raceProps} />}
+      {config.type === 'radial' && <RadialRace {...raceProps} />}
+      {config.type === 'bump' && <BumpRace {...raceProps} />}
+      {config.type === 'stacked-area' && <StackedAreaRace {...raceProps} />}
+      {config.type === 'scatter' && <ScatterRace {...raceProps} />}
+      {config.type === 'spiral' && <SpiralRace {...raceProps} />}
+      {config.type === 'network' && <NetworkRace {...raceProps} />}
       
       {config.watermarkUrl && (
         <img 

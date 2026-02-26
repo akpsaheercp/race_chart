@@ -19,12 +19,15 @@ export default function BubbleRace({ svgRef, config, isPlaying, currentTimeIndex
     
     const layer = svg.insert('g', '.overlay-layer')
       .attr('class', 'race-layer')
-      .attr('transform', `translate(${margin.left},${margin.top})`);
+      .attr('transform', `translate(${margin.left},${margin.top})`)
+      .style('opacity', 0);
+      
+    layer.transition().duration(300).style('opacity', 1);
       
     gRef.current = layer;
 
     return () => {
-      layer.remove();
+      layer.transition().duration(300).style('opacity', 0).remove();
     };
   }, [config.fontFamily, dimensions]);
 
@@ -67,8 +70,7 @@ export default function BubbleRace({ svgRef, config, isPlaying, currentTimeIndex
         .attr('transform', (d: any) => {
            const targetX = d.x || innerWidth / 2;
            const targetY = d.y || innerHeight / 2;
-           const targetR = rScale(d.value);
-           bubbleStates.set(d.name, { x: targetX, y: targetY, r: targetR, value: d.value, vx: 0, vy: 0, vr: 0, vv: 0 });
+           bubbleStates.set(d.name, { x: targetX, y: targetY, r: 0, value: 0, vx: 0, vy: 0, vr: 0, vv: 0 });
            return `translate(${targetX}, ${targetY})`;
         });
 
@@ -282,8 +284,16 @@ export default function BubbleRace({ svgRef, config, isPlaying, currentTimeIndex
         group.select('.label')
           .attr('fill', config.theme === 'dark' ? '#ffffff' : '#000000');
 
+        const vVal = state.vv;
+        let arrow = '';
+        let arrowColor = '';
+        if (Math.abs(vVal) > 0.1) {
+            arrow = vVal > 0 ? ' ▲' : ' ▼';
+            arrowColor = vVal > 0 ? '#10b981' : '#ef4444';
+        }
+
         group.select('.value')
-          .text(formatNumber(state.value));
+          .html(`${formatNumber(state.value)}<tspan fill="${arrowColor}" font-size="0.8em">${arrow}</tspan>`);
       });
 
       bubbles.exit().remove();

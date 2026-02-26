@@ -127,7 +127,7 @@ export default function Customization({ config, onConfigChange }: CustomizationP
                 <div>
                   <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 mb-1.5 uppercase tracking-wider">Chart Type</label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {(['bar', 'stacked-bar', 'line', 'area', 'bubble', 'pie'] as const).map((type) => (
+                    {(['bar', 'stacked-bar', 'line', 'area', 'bubble', 'pie', 'treemap', 'radial', 'bump', 'stacked-area', 'scatter', 'spiral', 'network'] as const).map((type) => (
                       <button
                         key={type}
                         onClick={() => handleChange('type', type)}

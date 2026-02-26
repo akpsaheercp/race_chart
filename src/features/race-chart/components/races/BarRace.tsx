@@ -24,13 +24,16 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
     
     const layer = svg.insert('g', '.overlay-layer')
       .attr('class', 'race-layer')
-      .attr('transform', `translate(${margin.left},${margin.top})`);
+      .attr('transform', `translate(${margin.left},${margin.top})`)
+      .style('opacity', 0);
+      
+    layer.transition().duration(300).style('opacity', 1);
       
     gRef.current = layer;
     axisGRef.current = layer.append('g').attr('class', 'axis');
 
     return () => {
-      layer.remove();
+      layer.transition().duration(300).style('opacity', 0).remove();
     };
   }, [config.fontFamily, dimensions.width]);
 
@@ -99,8 +102,7 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
         .attr('style', 'will-change: transform;')
         .attr('transform', d => {
            const targetPos = scaleBand(d.name) || 0;
-           const targetSize = isVertical ? innerHeight - scaleValue(d.value) : scaleValue(d.value);
-           barStates.set(d.name, { pos: targetPos, size: targetSize, value: d.value, vPos: 0, vSize: 0, vv: 0 });
+           barStates.set(d.name, { pos: targetPos, size: 0, value: 0, vPos: 0, vSize: 0, vv: 0 });
            return isVertical ? `translate(${targetPos}, 0)` : `translate(0, ${targetPos})`;
         });
 
@@ -398,9 +400,17 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
         const label = group.select('.label')
           .attr('fill', config.labelColor || (config.theme === 'dark' ? '#ffffff' : '#000000'));
 
+        const vVal = state.vv;
+        let arrow = '';
+        let arrowColor = '';
+        if (Math.abs(vVal) > 0.1) {
+            arrow = vVal > 0 ? ' ▲' : ' ▼';
+            arrowColor = vVal > 0 ? '#10b981' : '#ef4444';
+        }
+
         const valueText = group.select('.value')
           .attr('fill', config.valueColor || (config.theme === 'dark' ? '#ffffff' : '#000000'))
-          .text(formatNumber(state.value));
+          .html(`${formatNumber(state.value)}<tspan fill="${arrowColor}" font-size="0.8em">${arrow}</tspan>`);
 
         // Icon handling
         const icon = group.select('.bar-icon');

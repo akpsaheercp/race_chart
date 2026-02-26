@@ -12,7 +12,7 @@ export interface ChartConfig {
   title: string;
   subtitle: string;
   caption: string;
-  type: 'bar' | 'column' | 'stacked' | 'line' | 'area' | 'bubble' | 'pie' | 'stacked-bar' | 'map';
+  type: 'bar' | 'column' | 'stacked' | 'line' | 'area' | 'bubble' | 'pie' | 'stacked-bar' | 'map' | 'treemap' | 'radial' | 'bump' | 'stacked-area' | 'scatter' | 'spiral' | 'network';
   orientation?: 'horizontal' | 'vertical';
   data: DataPoint[];
   secondaryData?: DataPoint[];

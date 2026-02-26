@@ -20,12 +20,15 @@ export default function PieRace({ svgRef, config, isPlaying, currentTimeIndex, d
     
     const layer = svg.insert('g', '.overlay-layer')
       .attr('class', 'race-layer')
-      .attr('transform', `translate(${margin.left + innerWidth / 2},${margin.top + innerHeight / 2})`);
+      .attr('transform', `translate(${margin.left + innerWidth / 2},${margin.top + innerHeight / 2})`)
+      .style('opacity', 0);
+      
+    layer.transition().duration(300).style('opacity', 1);
       
     gRef.current = layer;
 
     return () => {
-      layer.remove();
+      layer.transition().duration(300).style('opacity', 0).remove();
     };
   }, [config.fontFamily, dimensions]);
 
@@ -88,7 +91,7 @@ export default function PieRace({ svgRef, config, isPlaying, currentTimeIndex, d
         
         let state = pieStates.get(d.data.name);
         if (!state) {
-          state = { startAngle: targetStart, endAngle: targetEnd, value: d.data.value, vStart: 0, vEnd: 0, vv: 0 };
+          state = { startAngle: targetStart, endAngle: targetStart, value: 0, vStart: 0, vEnd: 0, vv: 0 };
           pieStates.set(d.data.name, state);
         }
 
@@ -235,10 +238,18 @@ export default function PieRace({ svgRef, config, isPlaying, currentTimeIndex, d
         group.select('.pie-line')
           .attr('points', `${arc.centroid(currentArcData)},${outerArc.centroid(currentArcData)},${pos}`);
 
+        const vVal = state.vv;
+        let arrow = '';
+        let arrowColor = '';
+        if (Math.abs(vVal) > 0.1) {
+            arrow = vVal > 0 ? ' ▲' : ' ▼';
+            arrowColor = vVal > 0 ? '#10b981' : '#ef4444';
+        }
+
         group.select('.label')
           .attr('transform', `translate(${pos})`)
           .style('text-anchor', midAngle < Math.PI ? 'start' : 'end')
-          .text(`${d.data.name} (${formatNumber(state.value)})`);
+          .html(`${d.data.name} (${formatNumber(state.value)})<tspan fill="${arrowColor}" font-size="0.8em">${arrow}</tspan>`);
       });
 
       slices.exit().remove();
