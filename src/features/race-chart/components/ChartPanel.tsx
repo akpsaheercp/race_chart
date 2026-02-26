@@ -455,12 +455,12 @@ export default function ChartPanel({ config, onConfigChange, onRemove }: ChartPa
           </div>
           
           {config.data.length > 0 ? (
-            <div className={`space-y-4 sm:space-y-6 ${isFullscreen ? 'p-4 sm:p-8 bg-white dark:bg-[#080808] overflow-y-auto' : ''} ${
+            <div className={`${isFullscreen ? 'flex flex-col h-full w-full bg-white dark:bg-[#080808] p-4' : 'space-y-4 sm:space-y-6'} ${
               isMobile && orientation === 'landscape' ? 'flex-1 flex flex-col min-h-0 relative' : ''
             }`} ref={chartContainerRef}>
               <div className={`w-full ${
                 isFullscreen 
-                  ? 'h-[calc(100vh-140px)]' 
+                  ? 'flex-1 min-h-0' 
                   : isMobile && orientation === 'landscape'
                     ? 'absolute inset-0'
                     : 'aspect-video'
@@ -475,11 +475,11 @@ export default function ChartPanel({ config, onConfigChange, onRemove }: ChartPa
                 />
               </div>
               <div className={`${
-                isMobile && orientation === 'landscape' 
+                isMobile && orientation === 'landscape' || isFullscreen
                   ? 'absolute bottom-4 left-4 right-4 z-50' 
                   : ''
               }`}>
-                <div className={isMobile && orientation === 'landscape' ? 'scale-90 origin-bottom' : ''}>
+                <div className={isMobile && orientation === 'landscape' || isFullscreen ? 'scale-90 origin-bottom' : ''}>
                   <Controls
                     isPlaying={isPlaying}
                     onPlayPause={() => engine.togglePlay()}
@@ -493,7 +493,7 @@ export default function ChartPanel({ config, onConfigChange, onRemove }: ChartPa
                     onLoopToggle={() => setIsLooping(!isLooping)}
                     isFullscreen={isFullscreen}
                     onFullscreenToggle={toggleFullscreen}
-                    className={isMobile && orientation === 'landscape' ? 'bg-white/80 dark:bg-black/80 backdrop-blur-md border-transparent' : ''}
+                    className={isMobile && orientation === 'landscape' || isFullscreen ? 'bg-white/80 dark:bg-black/80 backdrop-blur-md border-transparent' : ''}
                   />
                 </div>
               </div>

@@ -96,6 +96,84 @@ export const RaceChart = React.forwardRef<SVGSVGElement, RaceChartProps>(({ conf
 
   }, [config.fontFamily]);
 
+  // Legend Rendering
+  useEffect(() => {
+    if (!internalSvgRef.current) return;
+    const svg = d3.select(internalSvgRef.current);
+    
+    // Clear existing legend
+    svg.select('.legend-layer').remove();
+
+    if (!config.showLegend) return;
+
+    const legendG = svg.append('g')
+      .attr('class', 'legend-layer');
+
+    const uniqueEntities = Array.from(new Set(config.data.map(d => d.name))).sort();
+    const itemHeight = 20;
+    const itemSpacing = 5;
+    const symbolSize = 12;
+    
+    // Position logic
+    let x = 20;
+    let y = 20;
+    
+    const isRight = config.legendPosition.includes('right');
+    const isBottom = config.legendPosition.includes('bottom');
+    
+    if (isRight) {
+       x = dimensions.width - 150; // Approximate width
+    }
+    
+    if (isBottom) {
+       y = dimensions.height - (uniqueEntities.length * (itemHeight + itemSpacing)) - 40;
+    } else {
+       y = 100; // Below header
+    }
+
+    legendG.attr('transform', `translate(${x}, ${y})`);
+    
+    // Background for legend to make it readable
+    if (uniqueEntities.length > 0) {
+      const padding = 10;
+      const legendHeight = uniqueEntities.length * (itemHeight + itemSpacing) + padding;
+      const legendWidth = 140; // Approx
+      
+      legendG.append('rect')
+        .attr('x', -padding)
+        .attr('y', -padding)
+        .attr('width', legendWidth)
+        .attr('height', legendHeight)
+        .attr('rx', 8)
+        .attr('fill', config.theme === 'dark' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.8)')
+        .attr('stroke', config.theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)');
+    }
+
+    uniqueEntities.forEach((entity, i) => {
+      const g = legendG.append('g')
+        .attr('transform', `translate(0, ${i * (itemHeight + itemSpacing)})`);
+        
+      const color = config.entitySettings?.[entity]?.color || config.colors[entity] || '#ccc';
+      
+      g.append('rect')
+        .attr('width', symbolSize)
+        .attr('height', symbolSize)
+        .attr('rx', 2)
+        .attr('fill', color);
+        
+      g.append('text')
+        .attr('x', symbolSize + 8)
+        .attr('y', symbolSize / 2)
+        .attr('dy', '0.35em')
+        .attr('fill', config.theme === 'dark' ? '#fff' : '#000')
+        .attr('font-family', config.fontFamily)
+        .attr('font-size', '12px')
+        .attr('font-weight', '500')
+        .text(entity);
+    });
+
+  }, [config.showLegend, config.legendPosition, config.data, config.colors, config.entitySettings, dimensions, config.theme, config.fontFamily]);
+
   useEffect(() => {
     if (!dateLabelRef.current || !headerRef.current || dateGroups.length === 0) return;
 

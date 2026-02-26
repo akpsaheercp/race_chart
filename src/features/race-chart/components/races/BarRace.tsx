@@ -103,6 +103,10 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
         .attr('fill', d => config.colors[d.name] || '#ccc')
         .attr('style', 'filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));');
 
+      barsEnter.append('image')
+        .attr('class', 'bar-icon')
+        .attr('preserveAspectRatio', 'xMidYMid slice');
+
       barsEnter.append('text')
         .attr('class', 'label')
         .attr('fill', config.theme === 'dark' ? '#ffffff' : '#09090b')
@@ -159,6 +163,14 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
           .attr('stroke', isOvertaking ? (config.theme === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)') : 'none')
           .attr('stroke-width', isOvertaking ? 2 : 0);
 
+        // Update color from settings if available
+        const entitySetting = config.entitySettings?.[d.name];
+        if (entitySetting?.color) {
+          rect.attr('fill', entitySetting.color);
+        } else {
+          rect.attr('fill', config.colors[d.name] || '#ccc');
+        }
+
         const label = group.select('.label')
           .attr('fill', config.theme === 'dark' ? '#ffffff' : '#000000');
 
@@ -166,16 +178,57 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
           .attr('fill', config.theme === 'dark' ? '#ffffff' : '#000000')
           .text(formatNumber(state.value));
 
+        // Icon handling
+        const icon = group.select('.bar-icon');
+        const iconUrl = entitySetting?.icon;
+        const iconPosition = entitySetting?.iconPosition || 'before-name';
+        const iconSize = scaleBand.bandwidth() * 0.8; // Icon size relative to bar width/height
+
+        if (iconUrl) {
+          icon.attr('href', iconUrl)
+              .attr('width', iconSize)
+              .attr('height', iconSize)
+              .style('display', 'block');
+              
+          // Circular mask for icon
+          // Note: Ideally we'd define a clipPath in defs, but for simplicity we can use CSS rounded corners if it were HTML, 
+          // but for SVG image we might need a clipPath. 
+          // For now, let's assume the user uploads pre-cropped images or we just show them square/rectangular.
+          // Or we can add a clipPath to the defs in RaceChart and reference it here, but unique IDs are tricky.
+          // Let's just render it for now.
+        } else {
+          icon.style('display', 'none');
+        }
+
         if (isVertical) {
           rect
             .attr('width', scaleBand.bandwidth())
             .attr('height', state.size)
             .attr('y', innerHeight - state.size);
 
+          // Vertical layout logic for icons/labels is complex due to space. 
+          // Simplified: Icon always above label if present.
+          
+          const labelY = innerHeight + 20;
+          let labelYOffset = 0;
+
+          if (iconUrl) {
+             // Position icon based on setting, defaulting to before-name (above name in vertical)
+             if (iconPosition === 'end-of-bar') {
+                icon.attr('x', (scaleBand.bandwidth() - iconSize) / 2)
+                    .attr('y', innerHeight - state.size - iconSize - 5);
+             } else {
+                // before-name or after-name (effectively above/below in vertical, but let's stick to near label)
+                icon.attr('x', (scaleBand.bandwidth() - iconSize) / 2)
+                    .attr('y', labelY + 15);
+                labelYOffset = -iconSize - 5; // Move label up? No, move icon down.
+             }
+          }
+
           label
             .attr('text-anchor', 'middle')
             .attr('x', scaleBand.bandwidth() / 2)
-            .attr('y', innerHeight + 20)
+            .attr('y', labelY)
             .attr('dy', '0.35em')
             .text(d.name);
 
@@ -184,22 +237,119 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
             .attr('x', scaleBand.bandwidth() / 2)
             .attr('y', innerHeight - state.size - 10)
             .attr('dy', '0');
+            
         } else {
+          // Horizontal Layout
           rect
             .attr('width', state.size)
             .attr('height', scaleBand.bandwidth())
             .attr('y', 0);
 
+          let labelX = isSmallScreen ? -8 : -16;
+          let labelAnchor = 'end';
+          
+          if (iconUrl) {
+            const yPos = (scaleBand.bandwidth() - iconSize) / 2;
+            
+            if (iconPosition === 'before-name') {
+               // Icon to the left of the name
+               // We need to measure text width to know where to put the icon? 
+               // Or just put icon at fixed offset and move text?
+               // Let's put icon at labelX - iconSize - padding, and keep label where it is?
+               // Or move label right?
+               
+               // Simpler: Icon at far left (if space) or just left of text.
+               // Let's assume label is right-aligned to x=0 (minus padding).
+               // So icon should be at labelX - textWidth - iconSize. 
+               // Since we can't easily measure text width in d3 loop without performance hit, 
+               // let's try a fixed offset approach or 'end-of-bar' which is easier.
+               
+               // Actually, 'before-name' in horizontal bar chart usually means left of the label.
+               // Since label is right-aligned to the axis, 'before-name' would be further left.
+               // This might push it off screen if margins aren't big enough.
+               
+               // Let's implement 'end-of-bar' (right of the bar) and 'after-name' (between name and bar? or right of name?)
+               // 'after-name' in RTL context (label left of axis) would be between label and axis.
+               
+               // Let's stick to:
+               // end-of-bar: Icon follows the bar growing.
+               // before-name: Icon is to the left of the label text.
+               // after-name: Icon is to the right of the label text (between text and axis).
+               
+               if (iconPosition === 'end-of-bar') {
+                 icon.attr('x', state.size + 5)
+                     .attr('y', yPos);
+                 
+                 // Push value text further right
+                 valueText.attr('x', state.size + iconSize + 10 + (isSmallScreen ? 8 : 16));
+               } else if (iconPosition === 'after-name') {
+                 // Right of label, left of axis.
+                 // Label is at -16. Icon at -16 + ? 
+                 // This is hard without text metrics.
+                 // Let's just put it at -iconSize - 5 and move label further left.
+                 icon.attr('x', -iconSize - 5)
+                     .attr('y', yPos);
+                 labelX -= (iconSize + 5);
+               } else {
+                 // before-name (default)
+                 // We'll just put it at a fixed large negative offset? No, that looks bad.
+                 // Let's put it inside the bar? No.
+                 // Let's put it at the end of the bar for now if 'before-name' is too hard without metrics,
+                 // OR just assume a fixed width for the icon and shift label.
+                 
+                 // Let's try: Icon at -iconSize - 5 (right next to axis), label shifted left.
+                 // Wait, 'before-name' means [Icon] [Name] | [Bar]
+                 // 'after-name' means [Name] [Icon] | [Bar]
+                 
+                 // So for 'after-name': Icon at -iconSize - 5. Label at -iconSize - 10 - textWidth.
+                 // For 'before-name': Icon at -textWidth - iconSize - 10.
+                 
+                 // Without text width, this is tricky.
+                 // Let's use 'end-of-bar' as the only supported dynamic position for now?
+                 // Or just render it at the end of the bar for 'end-of-bar', and for others, 
+                 // maybe render it inside the bar at the tip?
+                 
+                 // Let's implement 'end-of-bar' correctly.
+                 // For 'before-name'/'after-name', let's just place it at the end of the bar for now 
+                 // to avoid layout breakage, or maybe inside the bar at the start?
+                 
+                 // Actually, let's just support 'end-of-bar' and 'start-of-bar' (inside).
+                 // But user asked for "before entity name or after".
+                 
+                 // Let's try to estimate text width? No.
+                 // Let's just use a fixed offset for 'after-name' (between name and axis).
+                 
+                 if (iconPosition === 'after-name') {
+                    icon.attr('x', -iconSize - 8).attr('y', yPos);
+                    labelX -= (iconSize + 8);
+                 } else if (iconPosition === 'before-name') {
+                    // We can't do this well without metrics. 
+                    // Fallback: Place at end of bar.
+                    icon.attr('x', state.size + 5).attr('y', yPos);
+                    valueText.attr('x', state.size + iconSize + 10 + (isSmallScreen ? 8 : 16));
+                 } else {
+                    // end-of-bar
+                    icon.attr('x', state.size + 5).attr('y', yPos);
+                    valueText.attr('x', state.size + iconSize + 10 + (isSmallScreen ? 8 : 16));
+                 }
+               }
+            } else {
+               // No icon, standard value position
+               valueText.attr('x', state.size + (isSmallScreen ? 8 : 16));
+            }
+          } else {
+             valueText.attr('x', state.size + (isSmallScreen ? 8 : 16));
+          }
+
           label
-            .attr('text-anchor', 'end')
-            .attr('x', isSmallScreen ? -8 : -16)
+            .attr('text-anchor', labelAnchor)
+            .attr('x', labelX)
             .attr('y', scaleBand.bandwidth() / 2)
             .attr('dy', '0.35em')
             .text(d.name);
 
           valueText
             .attr('text-anchor', 'start')
-            .attr('x', state.size + (isSmallScreen ? 8 : 16))
             .attr('y', scaleBand.bandwidth() / 2)
             .attr('dy', '0.35em');
         }

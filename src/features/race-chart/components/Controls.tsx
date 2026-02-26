@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Pause, SkipBack, SkipForward, RotateCcw, Repeat, Maximize, Minimize } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, RotateCcw, Repeat, Maximize, Minimize, Settings2 } from 'lucide-react';
 
 interface ControlsProps {
   isPlaying: boolean;
@@ -14,6 +14,7 @@ interface ControlsProps {
   onLoopToggle: () => void;
   isFullscreen: boolean;
   onFullscreenToggle: () => void;
+  onToggleStudio?: () => void;
   className?: string;
 }
 
@@ -30,6 +31,7 @@ export default function Controls({
   onLoopToggle,
   isFullscreen,
   onFullscreenToggle,
+  onToggleStudio,
   className
 }: ControlsProps) {
   return (
@@ -89,6 +91,15 @@ export default function Controls({
             <span className="text-xs sm:text-sm font-mono text-zinc-600 dark:text-zinc-300 w-6 sm:w-8">{speed}x</span>
           </div>
           <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-800 mx-1"></div>
+          {onToggleStudio && (
+             <button
+              onClick={onToggleStudio}
+              className="p-2 sm:p-2.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all active:scale-95 shrink-0"
+              title="Studio Settings"
+            >
+              <Settings2 className="w-5 h-5" />
+            </button>
+          )}
           <button
             onClick={onFullscreenToggle}
             className="p-2 sm:p-2.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all active:scale-95 shrink-0"

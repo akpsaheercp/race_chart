@@ -28,6 +28,13 @@ export interface ChartConfig {
   interpolation: boolean;
   fps: number;
   entityFilter?: string;
+  entitySettings: Record<string, {
+    color?: string;
+    icon?: string;
+    iconPosition?: 'before-name' | 'after-name' | 'end-of-bar';
+  }>;
+  showLegend: boolean;
+  legendPosition: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 }
 
 export interface AudioConfig {

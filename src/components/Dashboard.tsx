@@ -1,8 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, BarChart3, Trash2, Sun, Moon } from 'lucide-react';
-import { ChartConfig } from '../types';
+import { ChartConfig, DataPoint } from '../types';
 import ChartPanel from '../features/race-chart/components/ChartPanel';
 import { validateConfig } from '../core/configSchema';
+
+const SAMPLE_DATA: DataPoint[] = [
+  { date: '2000', name: 'Google', value: 100, category: 'Tech' },
+  { date: '2000', name: 'Microsoft', value: 80, category: 'Tech' },
+  { date: '2000', name: 'Apple', value: 60, category: 'Tech' },
+  { date: '2001', name: 'Google', value: 150, category: 'Tech' },
+  { date: '2001', name: 'Microsoft', value: 90, category: 'Tech' },
+  { date: '2001', name: 'Apple', value: 100, category: 'Tech' },
+  { date: '2002', name: 'Google', value: 200, category: 'Tech' },
+  { date: '2002', name: 'Microsoft', value: 110, category: 'Tech' },
+  { date: '2002', name: 'Apple', value: 180, category: 'Tech' },
+  { date: '2003', name: 'Google', value: 250, category: 'Tech' },
+  { date: '2003', name: 'Microsoft', value: 130, category: 'Tech' },
+  { date: '2003', name: 'Apple', value: 260, category: 'Tech' },
+  { date: '2004', name: 'Google', value: 300, category: 'Tech' },
+  { date: '2004', name: 'Microsoft', value: 150, category: 'Tech' },
+  { date: '2004', name: 'Apple', value: 350, category: 'Tech' },
+];
+
+const SAMPLE_COLORS = {
+  'Google': '#4285F4',
+  'Microsoft': '#00A4EF',
+  'Apple': '#A2AAAD',
+};
 
 export default function Dashboard() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -33,10 +57,12 @@ export default function Dashboard() {
   const [charts, setCharts] = useState<ChartConfig[]>([
     validateConfig({
       id: '1',
-      title: 'Global Population by Country',
-      subtitle: '1950 - 2020',
-      caption: 'Data source: UN',
+      title: 'Tech Giants Growth',
+      subtitle: '2000 - 2004',
+      caption: 'Sample Data',
       theme: theme,
+      data: SAMPLE_DATA,
+      colors: SAMPLE_COLORS,
     })
   ]);
 

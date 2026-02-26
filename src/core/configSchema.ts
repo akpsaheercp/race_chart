@@ -15,6 +15,9 @@ export const DEFAULT_CHART_CONFIG: Omit<ChartConfig, 'id'> = {
   annotations: {},
   interpolation: true,
   fps: 60,
+  entitySettings: {},
+  showLegend: false,
+  legendPosition: 'bottom-right',
 };
 
 export function validateConfig(config: Partial<ChartConfig>): ChartConfig {
