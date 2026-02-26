@@ -16,7 +16,10 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
     // Clean up previous race type elements
     svg.selectAll('.race-layer').remove();
 
-    const margin = { top: 80, right: 100, bottom: 80, left: 140 };
+    const isSmallScreen = dimensions.width < 600;
+    const margin = isSmallScreen 
+      ? { top: 60, right: 20, bottom: 40, left: 90 } 
+      : { top: 80, right: 100, bottom: 80, left: 140 };
     
     const layer = svg.insert('g', '.overlay-layer')
       .attr('class', 'race-layer')
@@ -28,12 +31,16 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
     return () => {
       layer.remove();
     };
-  }, [config.fontFamily]);
+  }, [config.fontFamily, dimensions.width]);
 
   useEffect(() => {
     if (!gRef.current || !axisGRef.current || dateGroups.length === 0) return;
 
-    const margin = { top: 80, right: 100, bottom: 80, left: 140 };
+    const isSmallScreen = dimensions.width < 600;
+    const margin = isSmallScreen 
+      ? { top: 60, right: 20, bottom: 40, left: 90 } 
+      : { top: 80, right: 100, bottom: 80, left: 140 };
+
     const innerWidth = dimensions.width - margin.left - margin.right;
     const innerHeight = dimensions.height - margin.top - margin.bottom;
 
@@ -101,6 +108,7 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
         .attr('fill', config.theme === 'dark' ? '#ffffff' : '#09090b')
         .attr('font-family', config.fontFamily)
         .attr('font-weight', '700')
+        .attr('font-size', isSmallScreen ? '10px' : '14px')
         .attr('letter-spacing', '-0.01em');
 
       barsEnter.append('text')
@@ -108,6 +116,7 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
         .attr('fill', config.theme === 'dark' ? '#ffffff' : '#09090b')
         .attr('font-family', config.fontFamily)
         .attr('font-weight', '800')
+        .attr('font-size', isSmallScreen ? '10px' : '14px')
         .attr('letter-spacing', '-0.02em')
         .text(d => formatNumber(d.value));
 
@@ -183,14 +192,14 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
 
           label
             .attr('text-anchor', 'end')
-            .attr('x', -16)
+            .attr('x', isSmallScreen ? -8 : -16)
             .attr('y', scaleBand.bandwidth() / 2)
             .attr('dy', '0.35em')
             .text(d.name);
 
           valueText
             .attr('text-anchor', 'start')
-            .attr('x', state.size + 16)
+            .attr('x', state.size + (isSmallScreen ? 8 : 16))
             .attr('y', scaleBand.bandwidth() / 2)
             .attr('dy', '0.35em');
         }

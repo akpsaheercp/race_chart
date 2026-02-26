@@ -34,6 +34,8 @@ interface StudioPanelProps {
   onExportGif: () => void;
   isExporting: boolean;
   exportProgress: number;
+  exportResult: { type: 'video' | 'gif', url: string } | null;
+  onDownload: () => void;
   onYouTubeUpload: () => void;
   isUploading: boolean;
   totalFrames: number;
@@ -51,6 +53,8 @@ export default function StudioPanel({
   onExportGif,
   isExporting,
   exportProgress,
+  exportResult,
+  onDownload,
   onYouTubeUpload,
   isUploading,
   totalFrames,
@@ -81,14 +85,14 @@ export default function StudioPanel({
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Vertical Tab Navigation */}
-        <div className="w-20 sm:w-24 flex flex-col p-2 bg-zinc-50 dark:bg-zinc-900/50 border-r border-zinc-100 dark:border-zinc-800/50 gap-1 overflow-y-auto no-scrollbar">
+      <div className="flex flex-col sm:flex-row flex-1 overflow-hidden">
+        {/* Navigation - Horizontal on mobile, Vertical on desktop */}
+        <div className="w-full sm:w-20 md:w-24 flex flex-row sm:flex-col p-2 bg-zinc-50 dark:bg-zinc-900/50 border-b sm:border-b-0 sm:border-r border-zinc-100 dark:border-zinc-800/50 gap-1 overflow-x-auto sm:overflow-y-auto no-scrollbar shrink-0">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex flex-col items-center justify-center gap-1.5 py-3 px-1 rounded-xl text-[10px] sm:text-xs font-bold transition-all ${
+              className={`flex flex-col items-center justify-center gap-1.5 py-2 sm:py-3 px-4 sm:px-1 rounded-xl text-[10px] sm:text-xs font-bold transition-all min-w-[60px] sm:min-w-0 ${
                 activeTab === tab.id
                   ? 'bg-white dark:bg-zinc-800 text-indigo-600 dark:text-indigo-400 shadow-sm border border-zinc-200 dark:border-zinc-700'
                   : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 border border-transparent'
@@ -130,6 +134,8 @@ export default function StudioPanel({
                 progress={exportProgress}
                 totalFrames={totalFrames}
                 fps={config.fps}
+                exportResult={exportResult}
+                onDownload={onDownload}
               />
             </div>
           )}

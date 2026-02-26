@@ -16,6 +16,8 @@ export default function AudioPanel({ config, onConfigChange }: AudioPanelProps) 
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [fileName, setFileName] = useState<string | null>(null);
+
   const handleChange = (key: keyof AudioConfig, value: any) => {
     onConfigChange({ ...config, [key]: value });
   };
@@ -25,6 +27,7 @@ export default function AudioPanel({ config, onConfigChange }: AudioPanelProps) 
     if (file) {
       const url = URL.createObjectURL(file);
       handleChange('bgmUrl', url);
+      setFileName(file.name);
     }
   };
 
@@ -162,16 +165,10 @@ export default function AudioPanel({ config, onConfigChange }: AudioPanelProps) 
             <div>
               <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 mb-2 uppercase tracking-wider flex items-center gap-2">
                 <Music className="w-3 h-3" />
-                Music URL
+                Background Music
               </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={config.bgmUrl || ''}
-                  onChange={(e) => handleChange('bgmUrl', e.target.value)}
-                  placeholder="https://example.com/music.mp3"
-                  className="flex-1 p-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/50 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
-                />
+              
+              <div className="flex flex-col gap-3">
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -179,39 +176,78 @@ export default function AudioPanel({ config, onConfigChange }: AudioPanelProps) 
                   accept="audio/*"
                   className="hidden"
                 />
+                
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="p-2.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 rounded-xl transition-colors"
-                  title="Upload Audio"
+                  className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-zinc-200 dark:border-zinc-800 hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/10 rounded-xl transition-all group"
                 >
-                  <Upload className="w-5 h-5" />
+                  <div className="p-2 bg-zinc-100 dark:bg-zinc-800 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/50 rounded-lg text-zinc-500 dark:text-zinc-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                    <Upload className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                      {fileName ? 'Change Audio File' : 'Upload Audio File'}
+                    </p>
+                    <p className="text-[10px] text-zinc-400">MP3, WAV, AAC supported</p>
+                  </div>
                 </button>
+
+                {fileName && (
+                  <div className="flex items-center gap-2 p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900/30 rounded-xl">
+                    <Music className="w-4 h-4 text-indigo-500" />
+                    <span className="text-xs font-medium text-indigo-700 dark:text-indigo-300 truncate flex-1">
+                      {fileName}
+                    </span>
+                  </div>
+                )}
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-zinc-200 dark:border-zinc-800" />
+                  </div>
+                  <div className="relative flex justify-center text-[10px] font-bold uppercase tracking-widest">
+                    <span className="bg-white dark:bg-[#0a0a0a] px-2 text-zinc-400">OR USE URL</span>
+                  </div>
+                </div>
+
+                <input
+                  type="text"
+                  value={config.bgmUrl || ''}
+                  onChange={(e) => {
+                    handleChange('bgmUrl', e.target.value);
+                    setFileName(null);
+                  }}
+                  placeholder="https://example.com/music.mp3"
+                  className="w-full p-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/50 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-xs"
+                />
               </div>
             </div>
 
-            <div className="flex items-center gap-4 p-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-200 dark:border-zinc-800">
-              <div className="flex items-center gap-3 flex-1">
-                <Volume2 className="w-4 h-4 text-zinc-400" />
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={config.bgmVolume}
-                  onChange={(e) => handleChange('bgmVolume', parseFloat(e.target.value))}
-                  className="flex-1 accent-indigo-500"
-                />
+            {config.bgmUrl && (
+              <div className="flex items-center gap-4 p-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                <div className="flex items-center gap-3 flex-1">
+                  <Volume2 className="w-4 h-4 text-zinc-400" />
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={config.bgmVolume}
+                    onChange={(e) => handleChange('bgmVolume', parseFloat(e.target.value))}
+                    className="flex-1 accent-indigo-500"
+                  />
+                </div>
+                <label className="flex items-center gap-2 text-xs font-bold text-zinc-600 dark:text-zinc-400 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.loopBgm}
+                    onChange={(e) => handleChange('loopBgm', e.target.checked)}
+                    className="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  Loop
+                </label>
               </div>
-              <label className="flex items-center gap-2 text-xs font-bold text-zinc-600 dark:text-zinc-400 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={config.loopBgm}
-                  onChange={(e) => handleChange('loopBgm', e.target.checked)}
-                  className="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
-                />
-                Loop
-              </label>
-            </div>
+            )}
           </div>
         </div>
       )}

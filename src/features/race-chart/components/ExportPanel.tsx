@@ -8,9 +8,11 @@ interface ExportPanelProps {
   progress: number;
   totalFrames: number;
   fps: number;
+  exportResult: { type: 'video' | 'gif', url: string } | null;
+  onDownload: () => void;
 }
 
-export default function ExportPanel({ onExportVideo, onExportGif, isExporting, progress, totalFrames, fps }: ExportPanelProps) {
+export default function ExportPanel({ onExportVideo, onExportGif, isExporting, progress, totalFrames, fps, exportResult, onDownload }: ExportPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const duration = totalFrames / (fps / 10); // Rough estimate of video length in seconds
   const estRenderTime = totalFrames * 0.2; // Estimate 0.2s per frame for rendering
@@ -55,27 +57,54 @@ export default function ExportPanel({ onExportVideo, onExportGif, isExporting, p
               Export your animated chart as a video or GIF. The export process will capture the animation frame by frame at {fps} FPS.
             </p>
 
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                onClick={onExportVideo}
-                disabled={isExporting}
-                className="flex flex-col items-center justify-center gap-2 p-4 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed group active:scale-[0.98]"
-              >
-                <Video className="w-8 h-8 text-zinc-400 group-hover:text-indigo-500 transition-colors" />
-                <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100">Export MP4</span>
-                <span className="text-[10px] text-zinc-400">1080p Video</span>
-              </button>
+            {!exportResult ? (
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={onExportVideo}
+                  disabled={isExporting}
+                  className="flex flex-col items-center justify-center gap-2 p-4 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed group active:scale-[0.98]"
+                >
+                  <Video className="w-8 h-8 text-zinc-400 group-hover:text-indigo-500 transition-colors" />
+                  <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100">Export MP4</span>
+                  <span className="text-[10px] text-zinc-400">1080p Video</span>
+                </button>
 
-              <button
-                onClick={onExportGif}
-                disabled={isExporting}
-                className="flex flex-col items-center justify-center gap-2 p-4 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed group active:scale-[0.98]"
-              >
-                <ImageIcon className="w-8 h-8 text-zinc-400 group-hover:text-indigo-500 transition-colors" />
-                <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100">Export GIF</span>
-                <span className="text-[10px] text-zinc-400">Animated Image</span>
-              </button>
-            </div>
+                <button
+                  onClick={onExportGif}
+                  disabled={isExporting}
+                  className="flex flex-col items-center justify-center gap-2 p-4 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed group active:scale-[0.98]"
+                >
+                  <ImageIcon className="w-8 h-8 text-zinc-400 group-hover:text-indigo-500 transition-colors" />
+                  <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100">Export GIF</span>
+                  <span className="text-[10px] text-zinc-400">Animated Image</span>
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-900/30 rounded-2xl flex items-center gap-3">
+                  <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-full text-green-600 dark:text-green-400">
+                    {exportResult.type === 'video' ? <Video className="w-5 h-5" /> : <ImageIcon className="w-5 h-5" />}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Export Ready!</h3>
+                    <p className="text-xs text-zinc-500">Your {exportResult.type === 'video' ? 'video' : 'GIF'} has been rendered successfully.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={onDownload}
+                  className="w-full flex items-center justify-center gap-2 p-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold shadow-lg shadow-indigo-500/20 transition-all active:scale-[0.98]"
+                >
+                  <Download className="w-5 h-5" />
+                  Download {exportResult.type === 'video' ? 'MP4' : 'GIF'}
+                </button>
+                <button
+                  onClick={() => window.location.reload()} // Reset state hack or pass a reset handler
+                  className="w-full text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300 underline"
+                >
+                  Export Another File
+                </button>
+              </div>
+            )}
 
             {isExporting && (
               <div className="space-y-3 p-4 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-2xl border border-indigo-100 dark:border-indigo-900/30">

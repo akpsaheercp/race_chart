@@ -75,13 +75,16 @@ export default function RaceChart({ config, isPlaying, currentTimeIndex, onTimeI
       .attr('in', 'SourceGraphic')
       .attr('stdDeviation', '0 0');
 
-    const margin = { top: 80, right: 100, bottom: 40, left: 140 };
+    const isSmallScreen = dimensions.width < 600;
+    const margin = isSmallScreen 
+      ? { top: 60, right: 20, bottom: 40, left: 90 } 
+      : { top: 80, right: 100, bottom: 40, left: 140 };
     
     const staticLayer = svg.append('g').attr('class', 'static-layer');
-    headerRef.current = staticLayer.append('g').attr('transform', `translate(${margin.left}, 30)`);
+    headerRef.current = staticLayer.append('g').attr('transform', `translate(${margin.left}, ${isSmallScreen ? 20 : 30})`);
     
     dateLabelRef.current = staticLayer.append('text')
-      .attr('font-size', '80px')
+      .attr('font-size', isSmallScreen ? '48px' : '80px')
       .attr('font-weight', '900')
       .attr('text-anchor', 'end')
       .attr('font-family', config.fontFamily);
@@ -95,12 +98,14 @@ export default function RaceChart({ config, isPlaying, currentTimeIndex, onTimeI
     if (!dateLabelRef.current || !headerRef.current || dateGroups.length === 0) return;
 
     const renderStaticFrame = (index: number) => {
+      const isSmallScreen = dimensions.width < 600;
+
       d3.select('#motionBlur feGaussianBlur')
         .attr('stdDeviation', isPlaying ? '1.5 0' : '0 0');
 
       headerRef.current!.selectAll('*').remove();
       headerRef.current!.append('text')
-        .attr('font-size', '32px')
+        .attr('font-size', isSmallScreen ? '20px' : '32px')
         .attr('font-weight', '800')
         .attr('letter-spacing', '-0.02em')
         .attr('fill', config.theme === 'dark' ? '#ffffff' : '#09090b')
@@ -108,8 +113,8 @@ export default function RaceChart({ config, isPlaying, currentTimeIndex, onTimeI
         .text(config.title);
 
       headerRef.current!.append('text')
-        .attr('y', 28)
-        .attr('font-size', '16px')
+        .attr('y', isSmallScreen ? 18 : 28)
+        .attr('font-size', isSmallScreen ? '12px' : '16px')
         .attr('font-weight', '500')
         .attr('fill', config.theme === 'dark' ? '#a1a1aa' : '#71717a')
         .attr('font-family', config.fontFamily)
@@ -117,8 +122,8 @@ export default function RaceChart({ config, isPlaying, currentTimeIndex, onTimeI
 
       if (config.caption) {
         headerRef.current!.append('text')
-          .attr('y', 48)
-          .attr('font-size', '11px')
+          .attr('y', isSmallScreen ? 32 : 48)
+          .attr('font-size', isSmallScreen ? '9px' : '11px')
           .attr('font-weight', '600')
           .attr('fill', config.theme === 'dark' ? '#52525b' : '#a1a1aa')
           .attr('font-family', config.fontFamily)
@@ -128,9 +133,9 @@ export default function RaceChart({ config, isPlaying, currentTimeIndex, onTimeI
       }
 
       dateLabelRef.current!
-        .attr('x', dimensions.width - 40)
-        .attr('y', dimensions.height - 40)
-        .attr('font-size', dimensions.width < 600 ? '48px' : '96px')
+        .attr('x', dimensions.width - (isSmallScreen ? 20 : 40))
+        .attr('y', dimensions.height - (isSmallScreen ? 20 : 40))
+        .attr('font-size', isSmallScreen ? '48px' : '96px')
         .attr('font-weight', '900')
         .attr('letter-spacing', '-0.05em')
         .attr('text-anchor', 'end')

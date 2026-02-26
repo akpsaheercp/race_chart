@@ -14,6 +14,7 @@ interface ControlsProps {
   onLoopToggle: () => void;
   isFullscreen: boolean;
   onFullscreenToggle: () => void;
+  className?: string;
 }
 
 export default function Controls({
@@ -28,10 +29,11 @@ export default function Controls({
   isLooping,
   onLoopToggle,
   isFullscreen,
-  onFullscreenToggle
+  onFullscreenToggle,
+  className
 }: ControlsProps) {
   return (
-    <div className="bg-white dark:bg-[#0a0a0a] p-3 sm:p-5 rounded-2xl shadow-sm border border-zinc-200/80 dark:border-zinc-800/80 flex flex-col gap-4 sm:gap-5 transition-colors duration-300">
+    <div className={`bg-white dark:bg-[#0a0a0a] p-3 sm:p-5 rounded-2xl shadow-sm border border-zinc-200/80 dark:border-zinc-800/80 flex flex-col gap-4 sm:gap-5 transition-colors duration-300 ${className || ''}`}>
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-1 sm:gap-2">
           <button
