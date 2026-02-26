@@ -25,6 +25,8 @@ import YouTubePanel from './YouTubePanel';
 import DataInput from './DataInput';
 import EntityPanel from './EntityPanel';
 
+import { VideoExportController } from '../../../export/ExportController';
+
 interface StudioPanelProps {
   config: ChartConfig;
   onConfigChange: (config: ChartConfig) => void;
@@ -42,6 +44,7 @@ interface StudioPanelProps {
   isUploading: boolean;
   totalFrames: number;
   onDataLoaded: (data: DataPoint[], colors: Record<string, string>, config?: Partial<ChartConfig>, youtube?: Partial<YouTubeMetadata>, audio?: Partial<AudioConfig>) => void;
+  exportController: VideoExportController;
 }
 
 export default function StudioPanel({
@@ -60,7 +63,8 @@ export default function StudioPanel({
   onYouTubeUpload,
   isUploading,
   totalFrames,
-  onDataLoaded
+  onDataLoaded,
+  exportController
 }: StudioPanelProps) {
   const [activeTab, setActiveTab] = useState<'source' | 'visuals' | 'entities' | 'audio' | 'export' | 'social'>('source');
 
@@ -136,6 +140,7 @@ export default function StudioPanel({
                 fps={config.fps}
                 exportResult={exportResult}
                 onDownload={onDownload}
+                exportController={exportController}
               />
             )}
 

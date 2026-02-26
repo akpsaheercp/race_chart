@@ -11,6 +11,7 @@ import { useAnimationEngine } from '../hooks/useAnimationEngine';
 import { useOrientation } from '../hooks/useOrientation';
 import { Muxer, ArrayBufferTarget } from 'mp4-muxer';
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
+import { VideoExportController } from '../../../export/ExportController';
 
 interface ChartPanelProps {
   config: ChartConfig;
@@ -115,6 +116,26 @@ export default function ChartPanel({ config, onConfigChange, onRemove }: ChartPa
   const [exportResult, setExportResult] = useState<{ type: 'video' | 'gif', url: string } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
+  const exportController = useMemo(() => new VideoExportController(), []);
+
+  useEffect(() => {
+    exportController.onProgress = (pct, currentFrame, totalFrames, eta, sizeBytes) => {
+      setExportProgress(pct);
+    };
+    exportController.onComplete = (blob, filename, sizeBytes) => {
+      const url = URL.createObjectURL(blob);
+      setExportResult({ type: 'video', url });
+      setIsExporting(false);
+      engine.setTimeIndex(0);
+    };
+    exportController.onError = (error, recoverable) => {
+      console.error(error);
+      alert('Export failed: ' + error.message);
+      setIsExporting(false);
+      engine.setTimeIndex(0);
+    };
+  }, [exportController, engine]);
+
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       chartContainerRef.current?.requestFullscreen().catch(err => {
@@ -176,12 +197,7 @@ export default function ChartPanel({ config, onConfigChange, onRemove }: ChartPa
   }, [config.data]);
 
   const handleExportVideo = async () => {
-    if (!svgRef.current || !canvasRef.current) return;
-    
-    if (typeof VideoEncoder === 'undefined') {
-      alert('Video export is not supported in this browser. Please use Chrome, Edge, or a recent version of Firefox/Safari.');
-      return;
-    }
+    if (!svgRef.current) return;
 
     setIsExporting(true);
     setExportProgress(0);
@@ -189,130 +205,15 @@ export default function ChartPanel({ config, onConfigChange, onRemove }: ChartPa
     engine.pause();
     engine.setTimeIndex(0);
 
+    exportController.settings.fps = 30;
+    exportController.settings.durationPerFrame = config.duration / speed;
+    exportController.settings.theme = config.theme;
+
     try {
-      const width = 1920;
-      const height = 1080;
-      const fps = 30;
-      
-      const durationMs = (totalFrames - 1) * config.duration / speed;
-      const totalVideoFrames = Math.ceil(durationMs / 1000 * fps);
-      const step = (totalFrames - 1) / totalVideoFrames;
-      
-      const muxer = new Muxer({
-        target: new ArrayBufferTarget(),
-        video: {
-          codec: 'avc',
-          width,
-          height,
-        },
-        firstTimestampBehavior: 'offset',
-        fastStart: 'in-memory',
-      });
-
-      const videoEncoder = new VideoEncoder({
-        output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
-        error: (e) => {
-          console.error('VideoEncoder error:', e);
-          setIsExporting(false);
-        }
-      });
-
-      // Try High Profile Level 4.0 (avc1.640028) - Standard for 1080p Web/Desktop
-      // Fallback to Baseline Level 4.0 (avc1.420028) - High compatibility
-      const videoConfig = {
-        codec: 'avc1.640028', 
-        width,
-        height,
-        bitrate: 5_000_000,
-        framerate: fps,
-      };
-
-      // Check if config is supported
-      const support = await VideoEncoder.isConfigSupported(videoConfig);
-      if (!support.supported) {
-        console.warn('1080p High Profile 4.0 not supported, trying Baseline 4.0');
-        videoConfig.codec = 'avc1.420028'; // Fallback to Baseline 4.0
-      }
-
-      // Final check for fallback
-      const fallbackSupport = await VideoEncoder.isConfigSupported(videoConfig);
-      if (!fallbackSupport.supported) {
-         console.warn('1080p Baseline 4.0 not supported, trying Baseline 3.1 (720p)');
-         // Last resort: 720p Baseline 3.1 (widest compatibility but lower res)
-         videoConfig.codec = 'avc1.42001f';
-         videoConfig.width = 1280;
-         videoConfig.height = 720;
-         canvas.width = 1280;
-         canvas.height = 720;
-      }
-
-      videoEncoder.configure(videoConfig);
-
-      // Ensure canvas matches the final config dimensions
-      canvas.width = videoConfig.width;
-      canvas.height = videoConfig.height;
-      const ctx = canvas.getContext('2d', { alpha: false })!;
-
-      const frameDuration = 1000000 / fps;
-
-      for (let f = 0; f < totalVideoFrames; f++) {
-        if (!isExporting && f > 0) break; // Allow cancellation
-        
-        if (videoEncoder.state === 'closed') {
-          throw new Error('VideoEncoder closed unexpectedly');
-        }
-
-        const engineIndex = f * step;
-        
-        window.dispatchEvent(new CustomEvent('time-update', { detail: engineIndex }));
-        
-        // Wait for D3 updates to propagate
-        await new Promise(r => setTimeout(r, 10));
-
-        const svgData = new XMLSerializer().serializeToString(svgRef.current);
-        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-        const url = URL.createObjectURL(svgBlob);
-        
-        const img = new Image();
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-          img.src = url;
-        });
-
-        ctx.fillStyle = config.theme === 'dark' ? '#000' : '#fff';
-        ctx.fillRect(0, 0, width, height);
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        const frame = new VideoFrame(canvas, { 
-          timestamp: f * frameDuration,
-          duration: frameDuration
-        });
-        
-        videoEncoder.encode(frame, { keyFrame: f % 30 === 0 });
-        frame.close();
-        
-        URL.revokeObjectURL(url);
-
-        setExportProgress(f / totalVideoFrames);
-        
-        // Yield to main thread to keep UI responsive
-        await new Promise(r => setTimeout(r, 0));
-      }
-
-      await videoEncoder.flush();
-      muxer.finalize();
-
-      const { buffer } = muxer.target;
-      const blob = new Blob([buffer], { type: 'video/mp4' });
-      const url = URL.createObjectURL(blob);
-
-      setExportResult({ type: 'video', url });
-      
+      await exportController.startExport(svgRef.current, totalFrames, config.type);
     } catch (err) {
       console.error(err);
       alert('Export failed: ' + (err as any).message);
-    } finally {
       setIsExporting(false);
       engine.setTimeIndex(0);
     }
@@ -561,6 +462,7 @@ export default function ChartPanel({ config, onConfigChange, onRemove }: ChartPa
           isUploading={isUploading}
           totalFrames={totalFrames}
           onDataLoaded={handleDataLoaded}
+          exportController={exportController}
         />
       </div>
     </div>
