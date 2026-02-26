@@ -35,6 +35,16 @@ export interface ChartConfig {
   }>;
   showLegend: boolean;
   legendPosition: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  
+  // Text Styling
+  labelColor?: string;
+  valueColor?: string;
+  dateColor?: string;
+  dateBorderColor?: string;
+  dateBorderWidth?: number;
+  
+  // Axis
+  xAxisPosition?: 'top' | 'bottom';
 }
 
 export interface AudioConfig {

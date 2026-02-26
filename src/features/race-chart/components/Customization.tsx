@@ -143,23 +143,42 @@ export default function Customization({ config, onConfigChange }: CustomizationP
                   </div>
                 </div>
                 {['bar', 'line', 'area'].includes(config.type) && (
-                  <div>
-                    <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 mb-1.5 uppercase tracking-wider">Orientation</label>
-                    <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                      <button
-                        onClick={() => handleChange('orientation', 'horizontal')}
-                        className={`flex-1 p-1.5 rounded-lg text-xs transition-all ${(!config.orientation || config.orientation === 'horizontal') ? 'bg-white dark:bg-zinc-800 shadow-sm text-zinc-900 dark:text-zinc-100 font-semibold' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
-                      >
-                        Horizontal
-                      </button>
-                      <button
-                        onClick={() => handleChange('orientation', 'vertical')}
-                        className={`flex-1 p-1.5 rounded-lg text-xs transition-all ${config.orientation === 'vertical' ? 'bg-white dark:bg-zinc-800 shadow-sm text-zinc-900 dark:text-zinc-100 font-semibold' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
-                      >
-                        Vertical
-                      </button>
+                  <>
+                    <div>
+                      <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 mb-1.5 uppercase tracking-wider">Orientation</label>
+                      <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                        <button
+                          onClick={() => handleChange('orientation', 'horizontal')}
+                          className={`flex-1 p-1.5 rounded-lg text-xs transition-all ${(!config.orientation || config.orientation === 'horizontal') ? 'bg-white dark:bg-zinc-800 shadow-sm text-zinc-900 dark:text-zinc-100 font-semibold' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
+                        >
+                          Horizontal
+                        </button>
+                        <button
+                          onClick={() => handleChange('orientation', 'vertical')}
+                          className={`flex-1 p-1.5 rounded-lg text-xs transition-all ${config.orientation === 'vertical' ? 'bg-white dark:bg-zinc-800 shadow-sm text-zinc-900 dark:text-zinc-100 font-semibold' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
+                        >
+                          Vertical
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 mb-1.5 uppercase tracking-wider">X-Axis Position</label>
+                      <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                        <button
+                          onClick={() => handleChange('xAxisPosition', 'top')}
+                          className={`flex-1 p-1.5 rounded-lg text-xs transition-all ${(!config.xAxisPosition || config.xAxisPosition === 'top') ? 'bg-white dark:bg-zinc-800 shadow-sm text-zinc-900 dark:text-zinc-100 font-semibold' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
+                        >
+                          Top / Left
+                        </button>
+                        <button
+                          onClick={() => handleChange('xAxisPosition', 'bottom')}
+                          className={`flex-1 p-1.5 rounded-lg text-xs transition-all ${config.xAxisPosition === 'bottom' ? 'bg-white dark:bg-zinc-800 shadow-sm text-zinc-900 dark:text-zinc-100 font-semibold' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
+                        >
+                          Bottom / Right
+                        </button>
+                      </div>
+                    </div>
+                  </>
                 )}
                 <div>
                   <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 mb-1.5 uppercase tracking-wider">Max Visible Bars</label>
@@ -264,106 +283,87 @@ export default function Customization({ config, onConfigChange }: CustomizationP
                     </button>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
 
-          {/* Entity Customization */}
-          <div className="space-y-1">
-            <AccordionHeader id="entities" title="Entity Customization" icon={Users} />
-            {expandedSection === 'entities' && (
-              <div className="p-4 space-y-4 border-x border-b border-zinc-100 dark:border-zinc-800/50 rounded-b-xl bg-white dark:bg-black/20 animate-in fade-in slide-in-from-top-2 duration-200">
-                
-                {/* Legend Settings */}
-                <div className="p-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-800 space-y-3">
-                  <div className="flex items-center justify-between">
+                {/* Text Colors */}
+                <div className="space-y-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/50">
+                  <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Text Colors</label>
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <div className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Show Legend</div>
-                      <div className="text-[10px] text-zinc-500">Display color legend on chart</div>
+                      <label className="text-[10px] text-zinc-500 mb-1 block">Entity Labels</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={config.labelColor || (config.theme === 'dark' ? '#ffffff' : '#09090b')}
+                          onChange={(e) => handleChange('labelColor', e.target.value)}
+                          className="w-8 h-8 rounded cursor-pointer border-0 p-0 bg-transparent"
+                        />
+                        <button 
+                          onClick={() => handleChange('labelColor', undefined)}
+                          className="text-[10px] text-zinc-400 hover:text-zinc-600 underline"
+                        >Reset</button>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => handleChange('showLegend', !config.showLegend)}
-                      className={`w-10 h-5 rounded-full transition-all relative ${config.showLegend ? 'bg-indigo-500' : 'bg-zinc-300 dark:bg-zinc-700'}`}
-                    >
-                      <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${config.showLegend ? 'left-6' : 'left-1'}`} />
-                    </button>
+                    <div>
+                      <label className="text-[10px] text-zinc-500 mb-1 block">Values</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={config.valueColor || (config.theme === 'dark' ? '#ffffff' : '#09090b')}
+                          onChange={(e) => handleChange('valueColor', e.target.value)}
+                          className="w-8 h-8 rounded cursor-pointer border-0 p-0 bg-transparent"
+                        />
+                        <button 
+                          onClick={() => handleChange('valueColor', undefined)}
+                          className="text-[10px] text-zinc-400 hover:text-zinc-600 underline"
+                        >Reset</button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-zinc-500 mb-1 block">Date/Year</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={config.dateColor || (config.theme === 'dark' ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.12)')}
+                          onChange={(e) => handleChange('dateColor', e.target.value)}
+                          className="w-8 h-8 rounded cursor-pointer border-0 p-0 bg-transparent"
+                        />
+                        <button 
+                          onClick={() => handleChange('dateColor', undefined)}
+                          className="text-[10px] text-zinc-400 hover:text-zinc-600 underline"
+                        >Reset</button>
+                      </div>
+                    </div>
                   </div>
-                  
-                  {config.showLegend && (
-                    <div>
-                      <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 mb-1.5 uppercase tracking-wider">Position</label>
-                      <select
-                        value={config.legendPosition}
-                        onChange={(e) => handleChange('legendPosition', e.target.value)}
-                        className="w-full p-2 text-xs border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 outline-none"
-                      >
-                        <option value="top-left">Top Left</option>
-                        <option value="top-right">Top Right</option>
-                        <option value="bottom-left">Bottom Left</option>
-                        <option value="bottom-right">Bottom Right</option>
-                      </select>
-                    </div>
-                  )}
                 </div>
 
-                <div className="space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
-                  <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider sticky top-0 bg-white dark:bg-[#18181b] z-10 py-1">Entities ({Array.from(new Set(config.data.map(d => d.name))).length})</label>
-                  {Array.from(new Set(config.data.map(d => d.name))).sort().map(entityName => {
-                    const settings = config.entitySettings?.[entityName] || {};
-                    return (
-                      <div key={entityName} className="p-3 bg-zinc-50 dark:bg-zinc-900/30 rounded-lg border border-zinc-100 dark:border-zinc-800/50 hover:border-indigo-500/30 transition-colors">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300 truncate max-w-[120px]" title={entityName}>{entityName}</span>
-                          <input
-                            type="color"
-                            value={settings.color || config.colors[entityName] || '#cccccc'}
-                            onChange={(e) => {
-                              const newSettings = { ...config.entitySettings };
-                              newSettings[entityName] = { ...settings, color: e.target.value };
-                              // Also update the main colors map for backward compatibility
-                              const newColors = { ...config.colors, [entityName]: e.target.value };
-                              onConfigChange({ ...config, entitySettings: newSettings, colors: newColors });
-                            }}
-                            className="w-6 h-6 rounded cursor-pointer border-0 p-0 bg-transparent"
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <ImageIcon className="w-3 h-3 text-zinc-400" />
-                            <input
-                              type="text"
-                              placeholder="Icon URL (e.g. https://...)"
-                              value={settings.icon || ''}
-                              onChange={(e) => {
-                                const newSettings = { ...config.entitySettings };
-                                newSettings[entityName] = { ...settings, icon: e.target.value };
-                                onConfigChange({ ...config, entitySettings: newSettings });
-                              }}
-                              className="flex-1 p-1.5 text-[10px] border border-zinc-200 dark:border-zinc-800 rounded bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 outline-none focus:border-indigo-500"
-                            />
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <Layout className="w-3 h-3 text-zinc-400" />
-                            <select
-                              value={settings.iconPosition || 'before-name'}
-                              onChange={(e) => {
-                                const newSettings = { ...config.entitySettings };
-                                newSettings[entityName] = { ...settings, iconPosition: e.target.value as any };
-                                onConfigChange({ ...config, entitySettings: newSettings });
-                              }}
-                              className="flex-1 p-1.5 text-[10px] border border-zinc-200 dark:border-zinc-800 rounded bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 outline-none focus:border-indigo-500"
-                            >
-                              <option value="before-name">Before Name</option>
-                              <option value="after-name">After Name</option>
-                              <option value="end-of-bar">End of Bar</option>
-                            </select>
-                          </div>
-                        </div>
+                {/* Date Border */}
+                <div className="space-y-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/50">
+                  <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Date Border</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] text-zinc-500 mb-1 block">Border Color</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={config.dateBorderColor || '#000000'}
+                          onChange={(e) => handleChange('dateBorderColor', e.target.value)}
+                          className="w-8 h-8 rounded cursor-pointer border-0 p-0 bg-transparent"
+                        />
                       </div>
-                    );
-                  })}
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-zinc-500 mb-1 block">Border Width</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="10"
+                        step="0.5"
+                        value={config.dateBorderWidth || 0}
+                        onChange={(e) => handleChange('dateBorderWidth', parseFloat(e.target.value))}
+                        className="w-full p-1.5 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50/50 dark:bg-zinc-900/50 text-zinc-900 dark:text-zinc-100 outline-none"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

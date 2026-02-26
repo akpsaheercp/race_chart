@@ -219,7 +219,9 @@ export const RaceChart = React.forwardRef<SVGSVGElement, RaceChartProps>(({ conf
         .attr('font-weight', '900')
         .attr('letter-spacing', '-0.05em')
         .attr('text-anchor', 'end')
-        .attr('fill', config.theme === 'dark' ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.12)')
+        .attr('fill', config.dateColor || (config.theme === 'dark' ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.12)'))
+        .attr('stroke', config.dateBorderWidth ? (config.dateBorderColor || '#000') : 'none')
+        .attr('stroke-width', config.dateBorderWidth || 0)
         .attr('font-family', config.fontFamily);
 
       const floorIndex = Math.floor(index);

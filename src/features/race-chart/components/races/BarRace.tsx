@@ -66,20 +66,26 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
         scaleValue = d3.scaleLinear().range([innerHeight, 0]).domain([0, maxVal]);
         scaleBand = d3.scaleBand().range([0, innerWidth]).padding(0.1).domain(names);
 
-        axisGRef.current!.attr('transform', `translate(0, 0)`)
-          .call(d3.axisLeft(scaleValue).ticks(innerHeight / 100).tickSize(-innerWidth))
+        const axisPos = config.xAxisPosition === 'bottom' ? innerWidth : 0;
+        const axisFunc = config.xAxisPosition === 'bottom' ? d3.axisRight : d3.axisLeft;
+
+        axisGRef.current!.attr('transform', `translate(${axisPos}, 0)`)
+          .call(axisFunc(scaleValue).ticks(innerHeight / 100).tickSize(config.xAxisPosition === 'bottom' ? -innerWidth : -innerWidth)) // tickSize negative to span across
           .call(g => g.select('.domain').remove())
           .call(g => g.selectAll('.tick line').attr('stroke', config.theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)').attr('stroke-dasharray', '4,4'))
-          .call(g => g.selectAll('.tick text').attr('fill', config.theme === 'dark' ? '#a1a1aa' : '#71717a').attr('font-family', config.fontFamily).attr('font-weight', '500').attr('dx', '-0.5em'));
+          .call(g => g.selectAll('.tick text').attr('fill', config.theme === 'dark' ? '#a1a1aa' : '#71717a').attr('font-family', config.fontFamily).attr('font-weight', '500').attr('dx', config.xAxisPosition === 'bottom' ? '0.5em' : '-0.5em'));
       } else {
         scaleValue = d3.scaleLinear().range([0, innerWidth]).domain([0, maxVal]);
         scaleBand = d3.scaleBand().range([0, innerHeight]).padding(0.1).domain(names);
 
-        axisGRef.current!.attr('transform', `translate(0, 0)`)
-          .call(d3.axisTop(scaleValue).ticks(innerWidth / 100).tickSize(-innerHeight))
+        const axisPos = config.xAxisPosition === 'bottom' ? innerHeight : 0;
+        const axisFunc = config.xAxisPosition === 'bottom' ? d3.axisBottom : d3.axisTop;
+
+        axisGRef.current!.attr('transform', `translate(0, ${axisPos})`)
+          .call(axisFunc(scaleValue).ticks(innerWidth / 100).tickSize(config.xAxisPosition === 'bottom' ? -innerHeight : -innerHeight))
           .call(g => g.select('.domain').remove())
           .call(g => g.selectAll('.tick line').attr('stroke', config.theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)').attr('stroke-dasharray', '4,4'))
-          .call(g => g.selectAll('.tick text').attr('fill', config.theme === 'dark' ? '#a1a1aa' : '#71717a').attr('font-family', config.fontFamily).attr('font-weight', '500').attr('dy', '-0.5em'));
+          .call(g => g.selectAll('.tick text').attr('fill', config.theme === 'dark' ? '#a1a1aa' : '#71717a').attr('font-family', config.fontFamily).attr('font-weight', '500').attr('dy', config.xAxisPosition === 'bottom' ? '0.71em' : '-0.5em'));
       }
 
       const barStates = barStatesRef.current;
@@ -109,7 +115,7 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
 
       barsEnter.append('text')
         .attr('class', 'label')
-        .attr('fill', config.theme === 'dark' ? '#ffffff' : '#09090b')
+        .attr('fill', config.labelColor || (config.theme === 'dark' ? '#ffffff' : '#09090b'))
         .attr('font-family', config.fontFamily)
         .attr('font-weight', '700')
         .attr('font-size', isSmallScreen ? '10px' : '14px')
@@ -117,7 +123,7 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
 
       barsEnter.append('text')
         .attr('class', 'value')
-        .attr('fill', config.theme === 'dark' ? '#ffffff' : '#09090b')
+        .attr('fill', config.valueColor || (config.theme === 'dark' ? '#ffffff' : '#09090b'))
         .attr('font-family', config.fontFamily)
         .attr('font-weight', '800')
         .attr('font-size', isSmallScreen ? '10px' : '14px')
@@ -127,6 +133,7 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
       const barsUpdate = bars.merge(barsEnter);
 
       barsUpdate.each(function(d) {
+        // ... (existing animation logic) ...
         const targetPos = scaleBand(d.name) || 0;
         const targetSize = isVertical ? innerHeight - scaleValue(d.value) : scaleValue(d.value);
         
@@ -172,10 +179,10 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
         }
 
         const label = group.select('.label')
-          .attr('fill', config.theme === 'dark' ? '#ffffff' : '#000000');
+          .attr('fill', config.labelColor || (config.theme === 'dark' ? '#ffffff' : '#000000'));
 
         const valueText = group.select('.value')
-          .attr('fill', config.theme === 'dark' ? '#ffffff' : '#000000')
+          .attr('fill', config.valueColor || (config.theme === 'dark' ? '#ffffff' : '#000000'))
           .text(formatNumber(state.value));
 
         // Icon handling
