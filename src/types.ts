@@ -52,6 +52,20 @@ export interface ChartConfig {
   
   // Bar Styling
   barStyle?: 'solid' | 'dots';
+  
+  // Animation Settings
+  animationType?: 'linear' | 'spring' | 'elastic' | 'bounce' | 'back';
+  animationDuration?: number; // Override duration if needed
+  stiffness?: number; // For spring
+  damping?: number; // For spring
+  staggerDelay?: boolean;
+  showParticles?: boolean;
+  showRipple?: boolean;
+  
+  // Dot Animation Settings
+  dotEffect?: 'none' | 'trail' | 'pulse' | 'sparkle' | 'gradient';
+  dotSize?: number;
+  dotGap?: number;
 }
 
 export interface AudioConfig {

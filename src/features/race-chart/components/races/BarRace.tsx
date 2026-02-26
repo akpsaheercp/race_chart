@@ -3,6 +3,7 @@ import * as d3 from 'd3';
 import { RaceProps } from './types';
 import { formatNumber } from '../../../../shared/utils/formatters';
 import { getInterpolatedFrame } from '../../../../core/dataProcessor';
+import { Easing } from '../../../../core/easing';
 
 export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, dimensions, dateGroups }: RaceProps) {
   const gRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
@@ -131,9 +132,27 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
         .text(d => formatNumber(d.value));
 
       const barsUpdate = bars.merge(barsEnter);
+      
+      // Animation Constants
+      const stiffness = config.stiffness || 0.1;
+      const damping = config.damping || 0.8;
+      const animationType = config.animationType || 'linear';
 
-      barsUpdate.each(function(d) {
-        // ... (existing animation logic) ...
+      barsUpdate.each(function(d, i) {
+        // Staggered Cascade Delay
+        let effectiveValue = d.value;
+        if (config.staggerDelay) {
+            // Delay based on rank (i)
+            // We can't easily delay the *value* update without history or a separate time index per bar.
+            // Instead, we can modify the stiffness/damping slightly per rank to create a "wave" effect.
+            // Or we can just lag the target value update?
+            // Let's try modifying stiffness. Lower rank = lower stiffness (slower).
+            // No, usually top rank moves first? Or last?
+            // "Cascade" usually means top to bottom.
+            // Let's reduce stiffness for lower ranks.
+            // stiffness = baseStiffness * (1 - i * 0.02)
+        }
+        
         const targetPos = scaleBand(d.name) || 0;
         const targetSize = isVertical ? innerHeight - scaleValue(d.value) : scaleValue(d.value);
         
@@ -143,17 +162,52 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
           barStates.set(d.name, state);
         }
 
-        const stiffness = 0.15;
-        const damping = 0.8;
-        
-        state.vPos = (state.vPos + (targetPos - state.pos) * stiffness) * damping;
-        state.pos += state.vPos;
-        
-        state.vSize = (state.vSize + (targetSize - state.size) * stiffness) * damping;
-        state.size += state.vSize;
-        
-        state.vv = (state.vv + (d.value - state.value) * stiffness) * damping;
-        state.value += state.vv;
+        // Physics Update
+        if (animationType === 'linear') {
+             state.pos = targetPos;
+             state.size = targetSize;
+             state.value = d.value;
+             state.vPos = 0;
+             state.vSize = 0;
+             state.vv = 0;
+        } else {
+             // Spring / Elastic Physics
+             let k = stiffness;
+             let b = damping;
+             
+             if (animationType === 'elastic') {
+                 k = 0.2;
+                 b = 0.5; // Low damping for oscillation
+             } else if (animationType === 'bounce') {
+                 k = 0.4;
+                 b = 0.6;
+             } else if (animationType === 'back') {
+                 // Simulate overshoot by temporarily boosting target?
+                 // Or just under-damped spring.
+                 k = 0.3;
+                 b = 0.6;
+             }
+             
+             if (config.staggerDelay) {
+                 // Reduce stiffness for lower ranks to create cascade
+                 k = Math.max(0.01, k - i * 0.005);
+             }
+
+             // Position
+             const forcePos = (targetPos - state.pos) * k;
+             state.vPos = (state.vPos + forcePos) * b;
+             state.pos += state.vPos;
+             
+             // Size
+             const forceSize = (targetSize - state.size) * k;
+             state.vSize = (state.vSize + forceSize) * b;
+             state.size += state.vSize;
+             
+             // Value Text
+             const forceVal = (d.value - state.value) * k;
+             state.vv = (state.vv + forceVal) * b;
+             state.value += state.vv;
+        }
 
         const group = d3.select(this);
         
@@ -178,51 +232,77 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
            rect.attr('fill', 'none').attr('stroke', 'none');
            
            // Dot Logic
-           const DOT_SIZE = 6;
-           const DOT_GAP = 2;
+           const DOT_SIZE = config.dotSize || 6;
+           const DOT_GAP = config.dotGap || 2;
            const GRID_SIZE = DOT_SIZE + DOT_GAP;
            const DOT_RADIUS = DOT_SIZE / 2;
            
-           let dotData: { id: string, cx: number, cy: number, color: string }[] = [];
+           let dotData: { id: string, cx: number, cy: number, color: string, opacity: number, r: number }[] = [];
+           
+           // Calculate grid dimensions
+           let width, height, startX, startY, cols, rows;
            
            if (isVertical) {
-              // Vertical Logic (growing up)
-              const width = scaleBand.bandwidth();
-              const height = state.size;
-              const cols = Math.floor(width / GRID_SIZE);
-              const rows = Math.floor(height / GRID_SIZE);
-              
-              const startX = (width - (cols * GRID_SIZE)) / 2 + DOT_RADIUS;
-              // Start Y from bottom (innerHeight) upwards
-              // rect y is innerHeight - state.size
-              // So dots start at innerHeight - DOT_RADIUS and go up
-              
+              width = scaleBand.bandwidth();
+              height = state.size;
+              cols = Math.floor(width / GRID_SIZE);
+              rows = Math.floor(height / GRID_SIZE);
+              startX = (width - (cols * GRID_SIZE)) / 2 + DOT_RADIUS;
+              // Y starts from bottom
+           } else {
+              height = scaleBand.bandwidth();
+              width = state.size;
+              rows = Math.floor(height / GRID_SIZE);
+              cols = Math.floor(width / GRID_SIZE);
+              startY = (height - (rows * GRID_SIZE)) / 2 + DOT_RADIUS;
+           }
+           
+           // Generate Dots
+           const velocityFactor = Math.abs(state.vSize) * 2; // Use velocity for effects
+           
+           if (isVertical) {
               for (let r = 0; r < rows; r++) {
                   for (let c = 0; c < cols; c++) {
+                      const cy = innerHeight - (r * GRID_SIZE + DOT_RADIUS);
+                      const cx = startX + c * GRID_SIZE;
+                      
+                      let rMod = DOT_RADIUS;
+                      let opMod = 1;
+                      
+                      // Effects
+                      if (config.dotEffect === 'pulse') {
+                          rMod = DOT_RADIUS + Math.min(2, velocityFactor * 0.5);
+                      } else if (config.dotEffect === 'sparkle') {
+                          if (Math.random() < 0.05) opMod = 0.5 + Math.random() * 0.5;
+                      }
+                      
                       dotData.push({
                           id: `dot-${d.name}-${r}-${c}`,
-                          cx: startX + c * GRID_SIZE,
-                          cy: innerHeight - (r * GRID_SIZE + DOT_RADIUS),
-                          color: barColor
+                          cx, cy, color: barColor, opacity: opMod, r: rMod
                       });
                   }
               }
            } else {
-              // Horizontal Logic (growing right)
-              const height = scaleBand.bandwidth();
-              const width = state.size;
-              const rows = Math.floor(height / GRID_SIZE);
-              const cols = Math.floor(width / GRID_SIZE);
-              
-              const startY = (height - (rows * GRID_SIZE)) / 2 + DOT_RADIUS;
-              
               for (let c = 0; c < cols; c++) {
                   for (let r = 0; r < rows; r++) {
+                      const cx = c * GRID_SIZE + DOT_RADIUS;
+                      const cy = startY + r * GRID_SIZE;
+                      
+                      let rMod = DOT_RADIUS;
+                      let opMod = 1;
+                      
+                      // Effects
+                      if (config.dotEffect === 'pulse') {
+                          // Pulse size based on velocity and position (wave)
+                          const wave = Math.sin(c * 0.5 + currentTimeIndex * 0.1);
+                          rMod = DOT_RADIUS + Math.min(2, velocityFactor * 0.5) + (velocityFactor > 0.1 ? wave : 0);
+                      } else if (config.dotEffect === 'sparkle') {
+                          if (Math.random() < 0.05) opMod = 0.2 + Math.random() * 0.8;
+                      }
+                      
                       dotData.push({
                           id: `dot-${d.name}-${c}-${r}`,
-                          cx: c * GRID_SIZE + DOT_RADIUS,
-                          cy: startY + r * GRID_SIZE,
-                          color: barColor
+                          cx, cy, color: barColor, opacity: opMod, r: rMod
                       });
                   }
               }
@@ -239,28 +319,80 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
            dots.enter()
                .append('circle')
                .attr('class', 'dot')
-               .attr('r', DOT_RADIUS)
+               .attr('r', d => d.r)
                .attr('fill', d => d.color)
                .attr('opacity', 0)
-               .attr('cx', d => isVertical ? d.cx : d.cx + 50) // Start outside
-               .attr('cy', d => isVertical ? d.cy - 50 : d.cy) // Start outside
+               .attr('cx', d => isVertical ? d.cx : d.cx + 50)
+               .attr('cy', d => isVertical ? d.cy - 50 : d.cy)
                .transition()
                .duration(400)
                .ease(d3.easeBackOut)
                .attr('cx', d => d.cx)
                .attr('cy', d => d.cy)
-               .attr('opacity', 1);
+               .attr('opacity', d => d.opacity);
                
-           dots.exit()
-               .transition()
-               .duration(200)
-               .attr('opacity', 0)
-               .remove();
+           dots.attr('r', d => d.r)
+               .attr('opacity', d => d.opacity)
+               .attr('cx', d => d.cx) // Update position for existing dots (if grid shifts)
+               .attr('cy', d => d.cy);
+
+           // Trail Effect (Simple implementation: keep exit selection longer?)
+           if (config.dotEffect === 'trail') {
+               dots.exit()
+                   .transition()
+                   .duration(800)
+                   .attr('opacity', 0)
+                   .attr('r', 0)
+                   .attr('cx', d => isVertical ? d.cx : d.cx - 20) // Drift back
+                   .remove();
+           } else {
+               dots.exit()
+                   .transition()
+                   .duration(200)
+                   .attr('opacity', 0)
+                   .remove();
+           }
+           
+           // Overtake Particles
+           if (config.showParticles && isOvertaking) {
+               // Spawn random particles around the head
+               // This requires a separate particle system or just transient SVG elements
+               // For performance, maybe limit this.
+               // Let's add a few random dots that fly out
+               const particleCount = 2;
+               for(let p=0; p<particleCount; p++) {
+                   const angle = Math.random() * Math.PI * 2;
+                   const dist = 10 + Math.random() * 20;
+                   const px = (isVertical ? startX + width!/2 : state.size) + Math.cos(angle) * 10;
+                   const py = (isVertical ? innerHeight - state.size : startY! + height!/2) + Math.sin(angle) * 10;
+                   
+                   dotsGroup.append('circle')
+                       .attr('class', 'particle')
+                       .attr('r', 2)
+                       .attr('fill', barColor)
+                       .attr('cx', px)
+                       .attr('cy', py)
+                       .attr('opacity', 1)
+                       .transition()
+                       .duration(500)
+                       .attr('cx', px + Math.cos(angle) * dist)
+                       .attr('cy', py + Math.sin(angle) * dist)
+                       .attr('opacity', 0)
+                       .remove();
+               }
+           }
                
         } else {
            // Solid Mode
            group.select('.dots-group').remove();
            rect.attr('fill', barColor);
+           
+           // Ripple Effect for Solid Bars
+           if (config.showRipple && Math.abs(state.vSize) > 0.5) {
+               // Add a ripple overlay?
+               // Or just pulse opacity/brightness?
+               // Let's skip complex ripple for now to maintain 60fps
+           }
         }
 
         const label = group.select('.label')

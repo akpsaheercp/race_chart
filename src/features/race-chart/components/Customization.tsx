@@ -195,6 +195,23 @@ export default function Customization({ config, onConfigChange }: CustomizationP
                         </button>
                       </div>
                     </div>
+                    
+                    {config.barStyle === 'dots' && (
+                      <div className="mt-2 p-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-800">
+                        <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 mb-2 uppercase tracking-wider">Dot Effects</label>
+                        <div className="grid grid-cols-2 gap-2">
+                            {['none', 'trail', 'pulse', 'sparkle', 'gradient'].map(effect => (
+                               <button
+                                 key={effect}
+                                 onClick={() => handleChange('dotEffect', effect)}
+                                 className={`p-1.5 rounded text-[10px] capitalize transition-all ${config.dotEffect === effect ? 'bg-indigo-500 text-white shadow-sm' : 'bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700'}`}
+                               >
+                                 {effect}
+                               </button>
+                            ))}
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
                 <div>
@@ -245,6 +262,67 @@ export default function Customization({ config, onConfigChange }: CustomizationP
                     </select>
                   </div>
                 </div>
+
+                {/* Animation Type */}
+                <div>
+                    <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 mb-1.5 uppercase tracking-wider">Animation Physics</label>
+                    <div className="grid grid-cols-3 gap-2 mb-3">
+                        {['linear', 'spring', 'elastic', 'bounce', 'back'].map(type => (
+                           <button
+                             key={type}
+                             onClick={() => handleChange('animationType', type)}
+                             className={`p-1.5 rounded text-[10px] capitalize transition-all ${config.animationType === type ? 'bg-indigo-500 text-white shadow-sm' : 'bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700'}`}
+                           >
+                             {type}
+                           </button>
+                        ))}
+                    </div>
+                    
+                    {(config.animationType === 'spring' || config.animationType === 'elastic') && (
+                        <div className="grid grid-cols-2 gap-3 p-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-800 mb-3">
+                            <div>
+                                <label className="text-[10px] text-zinc-500 mb-1 block">Stiffness ({config.stiffness})</label>
+                                <input
+                                  type="range"
+                                  min="0.01"
+                                  max="1"
+                                  step="0.01"
+                                  value={config.stiffness || 0.1}
+                                  onChange={(e) => handleChange('stiffness', parseFloat(e.target.value))}
+                                  className="w-full accent-indigo-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] text-zinc-500 mb-1 block">Damping ({config.damping})</label>
+                                <input
+                                  type="range"
+                                  min="0.1"
+                                  max="1"
+                                  step="0.05"
+                                  value={config.damping || 0.8}
+                                  onChange={(e) => handleChange('damping', parseFloat(e.target.value))}
+                                  className="w-full accent-indigo-500"
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => handleChange('staggerDelay', !config.staggerDelay)}
+                            className={`flex-1 p-2 rounded-lg text-[10px] border transition-all ${config.staggerDelay ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400' : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500'}`}
+                        >
+                            Staggered Cascade
+                        </button>
+                        <button
+                            onClick={() => handleChange('showParticles', !config.showParticles)}
+                            className={`flex-1 p-2 rounded-lg text-[10px] border transition-all ${config.showParticles ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400' : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500'}`}
+                        >
+                            Overtake Particles
+                        </button>
+                    </div>
+                </div>
+
                 <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-800">
                   <div>
                     <div className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Smooth Interpolation</div>

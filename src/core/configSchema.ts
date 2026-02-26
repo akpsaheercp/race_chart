@@ -23,6 +23,15 @@ export const DEFAULT_CHART_CONFIG: Omit<ChartConfig, 'id'> = {
   showLabels: true,
   showIcons: true,
   barStyle: 'solid',
+  animationType: 'linear',
+  stiffness: 0.1,
+  damping: 0.8,
+  staggerDelay: false,
+  showParticles: false,
+  showRipple: false,
+  dotEffect: 'none',
+  dotSize: 6,
+  dotGap: 2,
 };
 
 export function validateConfig(config: Partial<ChartConfig>): ChartConfig {

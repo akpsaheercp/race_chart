@@ -3,6 +3,7 @@ import * as d3 from 'd3';
 import { RaceProps } from './types';
 import { formatNumber } from '../../../../shared/utils/formatters';
 import { getInterpolatedFrame } from '../../../../core/dataProcessor';
+import { Easing } from '../../../../core/easing';
 
 export default function BubbleRace({ svgRef, config, isPlaying, currentTimeIndex, dimensions, dateGroups }: RaceProps) {
   const gRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
@@ -113,20 +114,57 @@ export default function BubbleRace({ svgRef, config, isPlaying, currentTimeIndex
           bubbleStates.set(d.name, state);
         }
 
-        const stiffness = 0.15;
-        const damping = 0.8;
-        
-        state.vx = (state.vx + (targetX - state.x) * stiffness) * damping;
-        state.x += state.vx;
-        
-        state.vy = (state.vy + (targetY - state.y) * stiffness) * damping;
-        state.y += state.vy;
-        
-        state.vr = (state.vr + (targetR - state.r) * stiffness) * damping;
-        state.r += state.vr;
-        
-        state.vv = (state.vv + (d.value - state.value) * stiffness) * damping;
-        state.value += state.vv;
+        // Animation Constants
+        const stiffness = config.stiffness || 0.1;
+        const damping = config.damping || 0.8;
+        const animationType = config.animationType || 'linear';
+
+        // Physics Update
+        if (animationType === 'linear') {
+             state.x = targetX;
+             state.y = targetY;
+             state.r = targetR;
+             state.value = d.value;
+             state.vx = 0;
+             state.vy = 0;
+             state.vr = 0;
+             state.vv = 0;
+        } else {
+             let k = stiffness;
+             let b = damping;
+             
+             if (animationType === 'elastic') {
+                 k = 0.2;
+                 b = 0.5;
+             } else if (animationType === 'bounce') {
+                 k = 0.4;
+                 b = 0.6;
+             } else if (animationType === 'back') {
+                 k = 0.3;
+                 b = 0.6;
+             }
+             
+             if (config.staggerDelay) {
+                 // k = Math.max(0.01, k - i * 0.005); // i is not available in this scope if not passed
+             }
+
+             // Position
+             const forceX = (targetX - state.x) * k;
+             state.vx = (state.vx + forceX) * b;
+             state.x += state.vx;
+             
+             const forceY = (targetY - state.y) * k;
+             state.vy = (state.vy + forceY) * b;
+             state.y += state.vy;
+             
+             const forceR = (targetR - state.r) * k;
+             state.vr = (state.vr + forceR) * b;
+             state.r += state.vr;
+             
+             const forceVal = (d.value - state.value) * k;
+             state.vv = (state.vv + forceVal) * b;
+             state.value += state.vv;
+        }
 
         const group = d3.select(this);
         
@@ -142,8 +180,8 @@ export default function BubbleRace({ svgRef, config, isPlaying, currentTimeIndex
              .attr('stroke', 'none');
 
            // Dot Logic
-           const DOT_SIZE = 6;
-           const DOT_GAP = 2;
+           const DOT_SIZE = config.dotSize || 6;
+           const DOT_GAP = config.dotGap || 2;
            const GRID_SIZE = DOT_SIZE + DOT_GAP;
            const DOT_RADIUS = DOT_SIZE / 2;
            
@@ -153,11 +191,13 @@ export default function BubbleRace({ svgRef, config, isPlaying, currentTimeIndex
            const cols = Math.floor(diameter / GRID_SIZE);
            const rows = Math.floor(diameter / GRID_SIZE);
            
-           let dotData: { id: string, cx: number, cy: number, color: string }[] = [];
+           let dotData: { id: string, cx: number, cy: number, color: string, opacity: number, r: number }[] = [];
            
            // Center the grid
            const startX = -(cols * GRID_SIZE) / 2 + DOT_RADIUS;
            const startY = -(rows * GRID_SIZE) / 2 + DOT_RADIUS;
+           
+           const velocityFactor = Math.abs(state.vr) * 2; // Use velocity for effects
            
            for (let row = 0; row < rows; row++) {
                for (let col = 0; col < cols; col++) {
@@ -166,11 +206,23 @@ export default function BubbleRace({ svgRef, config, isPlaying, currentTimeIndex
                    
                    // Check if point is inside circle
                    if (Math.sqrt(cx * cx + cy * cy) <= r - DOT_RADIUS) {
+                       let rMod = DOT_RADIUS;
+                       let opMod = 1;
+                       
+                       // Effects
+                       if (config.dotEffect === 'pulse') {
+                           rMod = DOT_RADIUS + Math.min(2, velocityFactor * 0.5);
+                       } else if (config.dotEffect === 'sparkle') {
+                           if (Math.random() < 0.05) opMod = 0.5 + Math.random() * 0.5;
+                       }
+                       
                        dotData.push({
                            id: `dot-${d.name}-${row}-${col}`,
                            cx: cx,
                            cy: cy,
-                           color: bubbleColor
+                           color: bubbleColor,
+                           opacity: opMod,
+                           r: rMod
                        });
                    }
                }
@@ -187,7 +239,7 @@ export default function BubbleRace({ svgRef, config, isPlaying, currentTimeIndex
            dots.enter()
                .append('circle')
                .attr('class', 'dot')
-               .attr('r', DOT_RADIUS)
+               .attr('r', d => d.r)
                .attr('fill', d => d.color)
                .attr('opacity', 0)
                // Start from a random angle outside
@@ -198,9 +250,26 @@ export default function BubbleRace({ svgRef, config, isPlaying, currentTimeIndex
                .ease(d3.easeBackOut)
                .attr('cx', d => d.cx)
                .attr('cy', d => d.cy)
-               .attr('opacity', 1);
+               .attr('opacity', d => d.opacity);
                
-           dots.exit().remove();
+           dots.attr('r', d => d.r)
+               .attr('opacity', d => d.opacity)
+               .attr('cx', d => d.cx) // Update position for existing dots (if grid shifts)
+               .attr('cy', d => d.cy);
+
+           // Trail Effect
+           if (config.dotEffect === 'trail') {
+               dots.exit()
+                   .transition()
+                   .duration(800)
+                   .attr('opacity', 0)
+                   .attr('r', 0)
+                   .attr('cx', d => d.cx * 1.2) // Expand out
+                   .attr('cy', d => d.cy * 1.2)
+                   .remove();
+           } else {
+               dots.exit().remove();
+           }
            
         } else {
            group.select('.dots-group').remove();
