@@ -178,6 +178,23 @@ export default function Customization({ config, onConfigChange }: CustomizationP
                         </button>
                       </div>
                     </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 mb-1.5 uppercase tracking-wider">Bar Style</label>
+                      <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                        <button
+                          onClick={() => handleChange('barStyle', 'solid')}
+                          className={`flex-1 p-1.5 rounded-lg text-xs transition-all ${(!config.barStyle || config.barStyle === 'solid') ? 'bg-white dark:bg-zinc-800 shadow-sm text-zinc-900 dark:text-zinc-100 font-semibold' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
+                        >
+                          Solid
+                        </button>
+                        <button
+                          onClick={() => handleChange('barStyle', 'dots')}
+                          className={`flex-1 p-1.5 rounded-lg text-xs transition-all ${config.barStyle === 'dots' ? 'bg-white dark:bg-zinc-800 shadow-sm text-zinc-900 dark:text-zinc-100 font-semibold' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
+                        >
+                          Dots
+                        </button>
+                      </div>
+                    </div>
                   </>
                 )}
                 <div>
@@ -286,7 +303,20 @@ export default function Customization({ config, onConfigChange }: CustomizationP
 
                 {/* Text Colors */}
                 <div className="space-y-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/50">
-                  <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Text Colors</label>
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Text Styling</label>
+                    
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-zinc-500">Show Labels</span>
+                      <button
+                        onClick={() => handleChange('showLabels', !config.showLabels)}
+                        className={`w-8 h-4 rounded-full transition-all relative ${config.showLabels ? 'bg-indigo-500' : 'bg-zinc-300 dark:bg-zinc-700'}`}
+                      >
+                        <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${config.showLabels ? 'left-4.5' : 'left-0.5'}`} />
+                      </button>
+                    </div>
+                  </div>
+                  
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-[10px] text-zinc-500 mb-1 block">Entity Labels</label>

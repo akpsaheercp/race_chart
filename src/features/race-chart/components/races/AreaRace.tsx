@@ -22,6 +22,36 @@ export default function AreaRace({ svgRef, config, isPlaying, currentTimeIndex, 
       .attr('class', 'race-layer')
       .attr('transform', `translate(${margin.left},${margin.top})`);
       
+    // Add Dot Pattern Mask Definition
+    const defs = layer.append('defs');
+    const maskId = `dotMask-area-${config.id}`;
+    const patternId = `dotPattern-area-${config.id}`;
+    
+    const pattern = defs.append('pattern')
+      .attr('id', patternId)
+      .attr('patternUnits', 'userSpaceOnUse')
+      .attr('width', 8)
+      .attr('height', 8);
+      
+    pattern.append('rect')
+      .attr('width', 8)
+      .attr('height', 8)
+      .attr('fill', 'black'); // Mask background (hidden)
+      
+    pattern.append('circle')
+      .attr('cx', 4)
+      .attr('cy', 4)
+      .attr('r', 2.5)
+      .attr('fill', 'white'); // Mask foreground (visible)
+      
+    const mask = defs.append('mask')
+      .attr('id', maskId);
+      
+    mask.append('rect')
+      .attr('width', '100%')
+      .attr('height', '100%')
+      .attr('fill', `url(#${patternId})`);
+      
     gRef.current = layer;
     xAxisGRef.current = layer.append('g').attr('class', 'x-axis');
     yAxisGRef.current = layer.append('g').attr('class', 'y-axis');
@@ -140,10 +170,10 @@ export default function AreaRace({ svgRef, config, isPlaying, currentTimeIndex, 
 
       areasEnter.append('path')
         .attr('class', 'area-path')
-        .attr('fill', d => config.colors[d.name] || '#ccc')
+        .attr('fill', d => config.barStyle === 'dots' ? `url(#globalDotPattern-${config.id})` : (config.colors[d.name] || '#ccc'))
+        .attr('stroke', d => config.barStyle === 'dots' ? (config.colors[d.name] || '#ccc') : (config.theme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'))
+        .attr('stroke-width', config.barStyle === 'dots' ? 2 : 1)
         .attr('opacity', 0.8)
-        .attr('stroke', config.theme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)')
-        .attr('stroke-width', 1)
         .attr('style', 'filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));');
 
       areasEnter.append('text')
@@ -178,7 +208,11 @@ export default function AreaRace({ svgRef, config, isPlaying, currentTimeIndex, 
         const group = d3.select(this);
         
         group.select('.area-path')
-          .attr('d', areaGenerator(d.path) || '');
+          .attr('d', areaGenerator(d.path) || '')
+          .attr('fill', (config.colors[d.name] || '#ccc'))
+          .attr('mask', config.barStyle === 'dots' ? `url(#dotMask-area-${config.id})` : null)
+          .attr('stroke', config.barStyle === 'dots' ? (config.colors[d.name] || '#ccc') : (config.theme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'))
+          .attr('stroke-width', config.barStyle === 'dots' ? 2 : 1);
 
         const lastPoint = d.path[d.path.length - 1];
         if (lastPoint) {

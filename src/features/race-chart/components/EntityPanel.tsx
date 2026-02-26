@@ -28,6 +28,19 @@ export default function EntityPanel({ config, onConfigChange }: EntityPanelProps
       <div className="p-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-800 space-y-3">
         <div className="flex items-center justify-between">
           <div>
+            <div className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Show Icons</div>
+            <div className="text-[10px] text-zinc-500">Display entity icons on bars</div>
+          </div>
+          <button
+            onClick={() => handleChange('showIcons', !config.showIcons)}
+            className={`w-10 h-5 rounded-full transition-all relative ${config.showIcons ? 'bg-indigo-500' : 'bg-zinc-300 dark:bg-zinc-700'}`}
+          >
+            <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${config.showIcons ? 'left-6' : 'left-1'}`} />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between pt-2 border-t border-zinc-200 dark:border-zinc-800">
+          <div>
             <div className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Show Legend</div>
             <div className="text-[10px] text-zinc-500">Display color legend on chart</div>
           </div>

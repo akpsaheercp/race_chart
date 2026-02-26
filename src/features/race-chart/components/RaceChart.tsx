@@ -6,6 +6,7 @@ import LineRace from './races/LineRace';
 import BubbleRace from './races/BubbleRace';
 import PieRace from './races/PieRace';
 import AreaRace from './races/AreaRace';
+import MapRace from './races/MapRace';
 
 interface RaceChartProps {
   config: ChartConfig;
@@ -77,10 +78,29 @@ export const RaceChart = React.forwardRef<SVGSVGElement, RaceChartProps>(({ conf
       .attr('in', 'SourceGraphic')
       .attr('stdDeviation', '0 0');
 
+    // Global Dot Pattern for all charts
+    const pattern = defs.append('pattern')
+      .attr('id', `globalDotPattern-${config.id}`)
+      .attr('patternUnits', 'userSpaceOnUse')
+      .attr('width', 6)
+      .attr('height', 6);
+
+    pattern.append('rect')
+      .attr('width', 6)
+      .attr('height', 6)
+      .attr('fill', config.theme === 'dark' ? '#000' : '#fff')
+      .attr('fill-opacity', 0); // Transparent background
+
+    pattern.append('circle')
+      .attr('cx', 3)
+      .attr('cy', 3)
+      .attr('r', 1.5)
+      .attr('fill', config.theme === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)');
+
     const isSmallScreen = dimensions.width < 600;
     const margin = isSmallScreen 
-      ? { top: 60, right: 20, bottom: 40, left: 90 } 
-      : { top: 80, right: 100, bottom: 40, left: 140 };
+      ? { top: 60, right: 20, bottom: 40, left: config.showLabels ? 90 : 20 } 
+      : { top: 80, right: 100, bottom: 40, left: config.showLabels ? 140 : 20 };
     
     const staticLayer = svg.append('g').attr('class', 'static-layer');
     headerRef.current = staticLayer.append('g').attr('transform', `translate(${margin.left}, ${isSmallScreen ? 20 : 30})`);
@@ -303,6 +323,7 @@ export const RaceChart = React.forwardRef<SVGSVGElement, RaceChartProps>(({ conf
       {config.type === 'bubble' && <BubbleRace {...raceProps} />}
       {config.type === 'pie' && <PieRace {...raceProps} />}
       {config.type === 'area' && <AreaRace {...raceProps} />}
+      {config.type === 'map' && <MapRace {...raceProps} />}
       
       {config.watermarkUrl && (
         <img 

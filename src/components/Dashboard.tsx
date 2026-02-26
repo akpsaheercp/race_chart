@@ -28,6 +28,27 @@ const SAMPLE_COLORS = {
   'Apple': '#A2AAAD',
 };
 
+const STACKED_SAMPLE_DATA: DataPoint[] = [
+  { date: '2000', name: 'USA', value: 30, category: 'Gold' },
+  { date: '2000', name: 'USA', value: 20, category: 'Silver' },
+  { date: '2000', name: 'USA', value: 10, category: 'Bronze' },
+  { date: '2000', name: 'China', value: 20, category: 'Gold' },
+  { date: '2000', name: 'China', value: 15, category: 'Silver' },
+  { date: '2000', name: 'China', value: 5, category: 'Bronze' },
+  { date: '2001', name: 'USA', value: 35, category: 'Gold' },
+  { date: '2001', name: 'USA', value: 25, category: 'Silver' },
+  { date: '2001', name: 'USA', value: 15, category: 'Bronze' },
+  { date: '2001', name: 'China', value: 25, category: 'Gold' },
+  { date: '2001', name: 'China', value: 20, category: 'Silver' },
+  { date: '2001', name: 'China', value: 10, category: 'Bronze' },
+];
+
+const STACKED_COLORS = {
+  'Gold': '#FFD700',
+  'Silver': '#C0C0C0',
+  'Bronze': '#CD7F32',
+};
+
 export default function Dashboard() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined') {
@@ -76,7 +97,24 @@ export default function Dashboard() {
   const addChart = () => {
     const newChart = validateConfig({
       id: Date.now().toString(),
-      theme: theme, // Use current global theme for new charts
+      title: 'New Race Chart',
+      subtitle: 'Subtitle',
+      caption: 'Source: Data Source',
+      theme: theme,
+    });
+    setCharts([...charts, newChart]);
+  };
+
+  const addStackedChart = () => {
+    const newChart = validateConfig({
+      id: Date.now().toString(),
+      title: 'Olympic Medals',
+      subtitle: '2000 - 2001',
+      caption: 'Stacked Sample',
+      theme: theme,
+      type: 'stacked-bar',
+      data: STACKED_SAMPLE_DATA,
+      colors: STACKED_COLORS,
     });
     setCharts([...charts, newChart]);
   };
@@ -124,6 +162,13 @@ export default function Dashboard() {
             >
               <Plus className="w-5 h-5" />
               New Production
+            </button>
+            <button
+              onClick={addStackedChart}
+              className="flex-[2] md:flex-none flex items-center justify-center gap-3 py-3 sm:py-4 px-6 sm:px-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold transition-all shadow-2xl shadow-emerald-500/30 hover:scale-105 active:scale-95 text-sm sm:text-base"
+            >
+              <Plus className="w-5 h-5" />
+              Stacked Sample
             </button>
           </div>
         </header>

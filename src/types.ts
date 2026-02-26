@@ -12,7 +12,7 @@ export interface ChartConfig {
   title: string;
   subtitle: string;
   caption: string;
-  type: 'bar' | 'column' | 'stacked' | 'line' | 'area' | 'bubble' | 'pie' | 'stacked-bar';
+  type: 'bar' | 'column' | 'stacked' | 'line' | 'area' | 'bubble' | 'pie' | 'stacked-bar' | 'map';
   orientation?: 'horizontal' | 'vertical';
   data: DataPoint[];
   secondaryData?: DataPoint[];
@@ -37,14 +37,21 @@ export interface ChartConfig {
   legendPosition: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   
   // Text Styling
+  showLabels: boolean;
   labelColor?: string;
   valueColor?: string;
   dateColor?: string;
   dateBorderColor?: string;
   dateBorderWidth?: number;
   
+  // Icons
+  showIcons: boolean;
+  
   // Axis
   xAxisPosition?: 'top' | 'bottom';
+  
+  // Bar Styling
+  barStyle?: 'solid' | 'dots';
 }
 
 export interface AudioConfig {

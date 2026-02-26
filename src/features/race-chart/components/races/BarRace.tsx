@@ -18,8 +18,8 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
 
     const isSmallScreen = dimensions.width < 600;
     const margin = isSmallScreen 
-      ? { top: 60, right: 20, bottom: 40, left: 90 } 
-      : { top: 80, right: 100, bottom: 80, left: 140 };
+      ? { top: 60, right: 20, bottom: 40, left: config.showLabels ? 90 : 20 } 
+      : { top: 80, right: 100, bottom: 80, left: config.showLabels ? 140 : 20 };
     
     const layer = svg.insert('g', '.overlay-layer')
       .attr('class', 'race-layer')
@@ -38,8 +38,8 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
 
     const isSmallScreen = dimensions.width < 600;
     const margin = isSmallScreen 
-      ? { top: 60, right: 20, bottom: 40, left: 90 } 
-      : { top: 80, right: 100, bottom: 80, left: 140 };
+      ? { top: 60, right: 20, bottom: 40, left: config.showLabels ? 90 : 20 } 
+      : { top: 80, right: 100, bottom: 80, left: config.showLabels ? 140 : 20 };
 
     const innerWidth = dimensions.width - margin.left - margin.right;
     const innerHeight = dimensions.height - margin.top - margin.bottom;
@@ -172,10 +172,95 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
 
         // Update color from settings if available
         const entitySetting = config.entitySettings?.[d.name];
-        if (entitySetting?.color) {
-          rect.attr('fill', entitySetting.color);
+        const barColor = entitySetting?.color || config.colors[d.name] || '#ccc';
+        
+        if (config.barStyle === 'dots') {
+           rect.attr('fill', 'none').attr('stroke', 'none');
+           
+           // Dot Logic
+           const DOT_SIZE = 6;
+           const DOT_GAP = 2;
+           const GRID_SIZE = DOT_SIZE + DOT_GAP;
+           const DOT_RADIUS = DOT_SIZE / 2;
+           
+           let dotData: { id: string, cx: number, cy: number, color: string }[] = [];
+           
+           if (isVertical) {
+              // Vertical Logic (growing up)
+              const width = scaleBand.bandwidth();
+              const height = state.size;
+              const cols = Math.floor(width / GRID_SIZE);
+              const rows = Math.floor(height / GRID_SIZE);
+              
+              const startX = (width - (cols * GRID_SIZE)) / 2 + DOT_RADIUS;
+              // Start Y from bottom (innerHeight) upwards
+              // rect y is innerHeight - state.size
+              // So dots start at innerHeight - DOT_RADIUS and go up
+              
+              for (let r = 0; r < rows; r++) {
+                  for (let c = 0; c < cols; c++) {
+                      dotData.push({
+                          id: `dot-${d.name}-${r}-${c}`,
+                          cx: startX + c * GRID_SIZE,
+                          cy: innerHeight - (r * GRID_SIZE + DOT_RADIUS),
+                          color: barColor
+                      });
+                  }
+              }
+           } else {
+              // Horizontal Logic (growing right)
+              const height = scaleBand.bandwidth();
+              const width = state.size;
+              const rows = Math.floor(height / GRID_SIZE);
+              const cols = Math.floor(width / GRID_SIZE);
+              
+              const startY = (height - (rows * GRID_SIZE)) / 2 + DOT_RADIUS;
+              
+              for (let c = 0; c < cols; c++) {
+                  for (let r = 0; r < rows; r++) {
+                      dotData.push({
+                          id: `dot-${d.name}-${c}-${r}`,
+                          cx: c * GRID_SIZE + DOT_RADIUS,
+                          cy: startY + r * GRID_SIZE,
+                          color: barColor
+                      });
+                  }
+              }
+           }
+           
+           let dotsGroup = group.select<SVGGElement>('.dots-group');
+           if (dotsGroup.empty()) {
+               dotsGroup = group.append('g').attr('class', 'dots-group');
+           }
+           
+           const dots = dotsGroup.selectAll<SVGCircleElement, any>('.dot')
+               .data(dotData, (d: any) => d.id);
+               
+           dots.enter()
+               .append('circle')
+               .attr('class', 'dot')
+               .attr('r', DOT_RADIUS)
+               .attr('fill', d => d.color)
+               .attr('opacity', 0)
+               .attr('cx', d => isVertical ? d.cx : d.cx + 50) // Start outside
+               .attr('cy', d => isVertical ? d.cy - 50 : d.cy) // Start outside
+               .transition()
+               .duration(400)
+               .ease(d3.easeBackOut)
+               .attr('cx', d => d.cx)
+               .attr('cy', d => d.cy)
+               .attr('opacity', 1);
+               
+           dots.exit()
+               .transition()
+               .duration(200)
+               .attr('opacity', 0)
+               .remove();
+               
         } else {
-          rect.attr('fill', config.colors[d.name] || '#ccc');
+           // Solid Mode
+           group.select('.dots-group').remove();
+           rect.attr('fill', barColor);
         }
 
         const label = group.select('.label')
@@ -191,18 +276,11 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
         const iconPosition = entitySetting?.iconPosition || 'before-name';
         const iconSize = scaleBand.bandwidth() * 0.8; // Icon size relative to bar width/height
 
-        if (iconUrl) {
+        if (iconUrl && config.showIcons) {
           icon.attr('href', iconUrl)
               .attr('width', iconSize)
               .attr('height', iconSize)
               .style('display', 'block');
-              
-          // Circular mask for icon
-          // Note: Ideally we'd define a clipPath in defs, but for simplicity we can use CSS rounded corners if it were HTML, 
-          // but for SVG image we might need a clipPath. 
-          // For now, let's assume the user uploads pre-cropped images or we just show them square/rectangular.
-          // Or we can add a clipPath to the defs in RaceChart and reference it here, but unique IDs are tricky.
-          // Let's just render it for now.
         } else {
           icon.style('display', 'none');
         }
@@ -219,7 +297,7 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
           const labelY = innerHeight + 20;
           let labelYOffset = 0;
 
-          if (iconUrl) {
+          if (iconUrl && config.showIcons) {
              // Position icon based on setting, defaulting to before-name (above name in vertical)
              if (iconPosition === 'end-of-bar') {
                 icon.attr('x', (scaleBand.bandwidth() - iconSize) / 2)
@@ -237,6 +315,7 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
             .attr('x', scaleBand.bandwidth() / 2)
             .attr('y', labelY)
             .attr('dy', '0.35em')
+            .style('display', config.showLabels ? 'block' : 'none')
             .text(d.name);
 
           valueText
@@ -255,34 +334,10 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
           let labelX = isSmallScreen ? -8 : -16;
           let labelAnchor = 'end';
           
-          if (iconUrl) {
+          if (iconUrl && config.showIcons) {
             const yPos = (scaleBand.bandwidth() - iconSize) / 2;
             
             if (iconPosition === 'before-name') {
-               // Icon to the left of the name
-               // We need to measure text width to know where to put the icon? 
-               // Or just put icon at fixed offset and move text?
-               // Let's put icon at labelX - iconSize - padding, and keep label where it is?
-               // Or move label right?
-               
-               // Simpler: Icon at far left (if space) or just left of text.
-               // Let's assume label is right-aligned to x=0 (minus padding).
-               // So icon should be at labelX - textWidth - iconSize. 
-               // Since we can't easily measure text width in d3 loop without performance hit, 
-               // let's try a fixed offset approach or 'end-of-bar' which is easier.
-               
-               // Actually, 'before-name' in horizontal bar chart usually means left of the label.
-               // Since label is right-aligned to the axis, 'before-name' would be further left.
-               // This might push it off screen if margins aren't big enough.
-               
-               // Let's implement 'end-of-bar' (right of the bar) and 'after-name' (between name and bar? or right of name?)
-               // 'after-name' in RTL context (label left of axis) would be between label and axis.
-               
-               // Let's stick to:
-               // end-of-bar: Icon follows the bar growing.
-               // before-name: Icon is to the left of the label text.
-               // after-name: Icon is to the right of the label text (between text and axis).
-               
                if (iconPosition === 'end-of-bar') {
                  icon.attr('x', state.size + 5)
                      .attr('y', yPos);
@@ -290,42 +345,12 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
                  // Push value text further right
                  valueText.attr('x', state.size + iconSize + 10 + (isSmallScreen ? 8 : 16));
                } else if (iconPosition === 'after-name') {
-                 // Right of label, left of axis.
-                 // Label is at -16. Icon at -16 + ? 
-                 // This is hard without text metrics.
-                 // Let's just put it at -iconSize - 5 and move label further left.
                  icon.attr('x', -iconSize - 5)
                      .attr('y', yPos);
                  labelX -= (iconSize + 5);
                } else {
                  // before-name (default)
-                 // We'll just put it at a fixed large negative offset? No, that looks bad.
-                 // Let's put it inside the bar? No.
-                 // Let's put it at the end of the bar for now if 'before-name' is too hard without metrics,
-                 // OR just assume a fixed width for the icon and shift label.
-                 
-                 // Let's try: Icon at -iconSize - 5 (right next to axis), label shifted left.
-                 // Wait, 'before-name' means [Icon] [Name] | [Bar]
-                 // 'after-name' means [Name] [Icon] | [Bar]
-                 
-                 // So for 'after-name': Icon at -iconSize - 5. Label at -iconSize - 10 - textWidth.
-                 // For 'before-name': Icon at -textWidth - iconSize - 10.
-                 
-                 // Without text width, this is tricky.
-                 // Let's use 'end-of-bar' as the only supported dynamic position for now?
-                 // Or just render it at the end of the bar for 'end-of-bar', and for others, 
-                 // maybe render it inside the bar at the tip?
-                 
-                 // Let's implement 'end-of-bar' correctly.
-                 // For 'before-name'/'after-name', let's just place it at the end of the bar for now 
-                 // to avoid layout breakage, or maybe inside the bar at the start?
-                 
-                 // Actually, let's just support 'end-of-bar' and 'start-of-bar' (inside).
-                 // But user asked for "before entity name or after".
-                 
-                 // Let's try to estimate text width? No.
-                 // Let's just use a fixed offset for 'after-name' (between name and axis).
-                 
+                 // Fallback: Place at end of bar.
                  if (iconPosition === 'after-name') {
                     icon.attr('x', -iconSize - 8).attr('y', yPos);
                     labelX -= (iconSize + 8);
@@ -348,11 +373,16 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
              valueText.attr('x', state.size + (isSmallScreen ? 8 : 16));
           }
 
+          // If labels are hidden, we can use the full width (adjust axis/margin elsewhere, but here we just hide text)
+          // To truly use max width, we need to update margins in useEffect based on showLabels.
+          // For now, just hiding the text.
+          
           label
             .attr('text-anchor', labelAnchor)
             .attr('x', labelX)
             .attr('y', scaleBand.bandwidth() / 2)
             .attr('dy', '0.35em')
+            .style('display', config.showLabels ? 'block' : 'none')
             .text(d.name);
 
           valueText

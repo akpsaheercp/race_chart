@@ -73,11 +73,11 @@ export default function BubbleRace({ svgRef, config, isPlaying, currentTimeIndex
 
       bubblesEnter.append('circle')
         .attr('class', 'bubble-circle')
-        .attr('fill', d => config.colors[d.name] || '#ccc')
+        .attr('fill', d => config.barStyle === 'dots' ? `url(#globalDotPattern-${config.id})` : (config.colors[d.name] || '#ccc'))
+        .attr('stroke', d => config.barStyle === 'dots' ? (config.colors[d.name] || '#ccc') : (config.theme === 'dark' ? '#000' : '#fff'))
+        .attr('stroke-width', 2)
         .attr('r', d => rScale(d.value))
         .attr('opacity', 0.8)
-        .attr('stroke', config.theme === 'dark' ? '#000' : '#fff')
-        .attr('stroke-width', 2)
         .attr('style', 'filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));');
 
       bubblesEnter.append('text')
@@ -132,8 +132,83 @@ export default function BubbleRace({ svgRef, config, isPlaying, currentTimeIndex
         
         group.attr('transform', `translate(${state.x}, ${state.y})`);
         
-        group.select('.bubble-circle')
-          .attr('r', state.r);
+        // Update color from settings if available
+        const entitySetting = config.entitySettings?.[d.name];
+        const bubbleColor = entitySetting?.color || config.colors[d.name] || '#ccc';
+
+        if (config.barStyle === 'dots') {
+           group.select('.bubble-circle')
+             .attr('fill', 'none')
+             .attr('stroke', 'none');
+
+           // Dot Logic
+           const DOT_SIZE = 6;
+           const DOT_GAP = 2;
+           const GRID_SIZE = DOT_SIZE + DOT_GAP;
+           const DOT_RADIUS = DOT_SIZE / 2;
+           
+           // Generate dots within the circle
+           const r = state.r;
+           const diameter = r * 2;
+           const cols = Math.floor(diameter / GRID_SIZE);
+           const rows = Math.floor(diameter / GRID_SIZE);
+           
+           let dotData: { id: string, cx: number, cy: number, color: string }[] = [];
+           
+           // Center the grid
+           const startX = -(cols * GRID_SIZE) / 2 + DOT_RADIUS;
+           const startY = -(rows * GRID_SIZE) / 2 + DOT_RADIUS;
+           
+           for (let row = 0; row < rows; row++) {
+               for (let col = 0; col < cols; col++) {
+                   const cx = startX + col * GRID_SIZE;
+                   const cy = startY + row * GRID_SIZE;
+                   
+                   // Check if point is inside circle
+                   if (Math.sqrt(cx * cx + cy * cy) <= r - DOT_RADIUS) {
+                       dotData.push({
+                           id: `dot-${d.name}-${row}-${col}`,
+                           cx: cx,
+                           cy: cy,
+                           color: bubbleColor
+                       });
+                   }
+               }
+           }
+           
+           let dotsGroup = group.select<SVGGElement>('.dots-group');
+           if (dotsGroup.empty()) {
+               dotsGroup = group.append('g').attr('class', 'dots-group');
+           }
+           
+           const dots = dotsGroup.selectAll<SVGCircleElement, any>('.dot')
+               .data(dotData, (d: any) => d.id);
+               
+           dots.enter()
+               .append('circle')
+               .attr('class', 'dot')
+               .attr('r', DOT_RADIUS)
+               .attr('fill', d => d.color)
+               .attr('opacity', 0)
+               // Start from a random angle outside
+               .attr('cx', d => d.cx + (Math.random() - 0.5) * 100) 
+               .attr('cy', d => d.cy + (Math.random() - 0.5) * 100)
+               .transition()
+               .duration(400)
+               .ease(d3.easeBackOut)
+               .attr('cx', d => d.cx)
+               .attr('cy', d => d.cy)
+               .attr('opacity', 1);
+               
+           dots.exit().remove();
+           
+        } else {
+           group.select('.dots-group').remove();
+           group.select('.bubble-circle')
+             .attr('r', state.r)
+             .attr('fill', bubbleColor)
+             .attr('stroke', config.theme === 'dark' ? '#000' : '#fff');
+        }
 
         group.select('.label')
           .attr('fill', config.theme === 'dark' ? '#ffffff' : '#000000');

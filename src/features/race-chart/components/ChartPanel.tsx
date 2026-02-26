@@ -211,25 +211,57 @@ export default function ChartPanel({ config, onConfigChange, onRemove }: ChartPa
 
       const videoEncoder = new VideoEncoder({
         output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
-        error: (e) => console.error(e)
+        error: (e) => {
+          console.error('VideoEncoder error:', e);
+          setIsExporting(false);
+        }
       });
 
-      videoEncoder.configure({
-        codec: 'avc1.42001f',
+      // Try High Profile Level 4.0 (avc1.640028) - Standard for 1080p Web/Desktop
+      // Fallback to Baseline Level 4.0 (avc1.420028) - High compatibility
+      const videoConfig = {
+        codec: 'avc1.640028', 
         width,
         height,
         bitrate: 5_000_000,
         framerate: fps,
-      });
+      };
 
-      const canvas = canvasRef.current;
-      canvas.width = width;
-      canvas.height = height;
+      // Check if config is supported
+      const support = await VideoEncoder.isConfigSupported(videoConfig);
+      if (!support.supported) {
+        console.warn('1080p High Profile 4.0 not supported, trying Baseline 4.0');
+        videoConfig.codec = 'avc1.420028'; // Fallback to Baseline 4.0
+      }
+
+      // Final check for fallback
+      const fallbackSupport = await VideoEncoder.isConfigSupported(videoConfig);
+      if (!fallbackSupport.supported) {
+         console.warn('1080p Baseline 4.0 not supported, trying Baseline 3.1 (720p)');
+         // Last resort: 720p Baseline 3.1 (widest compatibility but lower res)
+         videoConfig.codec = 'avc1.42001f';
+         videoConfig.width = 1280;
+         videoConfig.height = 720;
+         canvas.width = 1280;
+         canvas.height = 720;
+      }
+
+      videoEncoder.configure(videoConfig);
+
+      // Ensure canvas matches the final config dimensions
+      canvas.width = videoConfig.width;
+      canvas.height = videoConfig.height;
       const ctx = canvas.getContext('2d', { alpha: false })!;
 
       const frameDuration = 1000000 / fps;
 
       for (let f = 0; f < totalVideoFrames; f++) {
+        if (!isExporting && f > 0) break; // Allow cancellation
+        
+        if (videoEncoder.state === 'closed') {
+          throw new Error('VideoEncoder closed unexpectedly');
+        }
+
         const engineIndex = f * step;
         
         window.dispatchEvent(new CustomEvent('time-update', { detail: engineIndex }));

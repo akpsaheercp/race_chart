@@ -20,6 +20,9 @@ export const DEFAULT_CHART_CONFIG: Omit<ChartConfig, 'id'> = {
   legendPosition: 'bottom-right',
   xAxisPosition: 'top',
   dateBorderWidth: 0,
+  showLabels: true,
+  showIcons: true,
+  barStyle: 'solid',
 };
 
 export function validateConfig(config: Partial<ChartConfig>): ChartConfig {

@@ -182,7 +182,10 @@ export default function LineRace({ svgRef, config, isPlaying, currentTimeIndex, 
         const group = d3.select(this);
         
         group.select('.line-path')
-          .attr('d', lineGenerator(d.path) || '');
+          .attr('d', lineGenerator(d.path) || '')
+          .attr('stroke-dasharray', config.barStyle === 'dots' ? '1, 6' : 'none')
+          .attr('stroke-linecap', config.barStyle === 'dots' ? 'round' : 'round')
+          .attr('stroke-width', config.barStyle === 'dots' ? 6 : 4);
 
         const lastPoint = d.path[d.path.length - 1];
         if (lastPoint) {
