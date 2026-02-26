@@ -15,10 +15,12 @@ interface RaceChartProps {
   speed: number;
 }
 
-export default function RaceChart({ config, isPlaying, currentTimeIndex, onTimeIndexChange, speed }: RaceChartProps) {
-  const svgRef = useRef<SVGSVGElement>(null);
+export const RaceChart = React.forwardRef<SVGSVGElement, RaceChartProps>(({ config, isPlaying, currentTimeIndex, onTimeIndexChange, speed }, ref) => {
+  const internalSvgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 500 });
+  
+  React.useImperativeHandle(ref, () => internalSvgRef.current!);
   
   const dateLabelRef = useRef<d3.Selection<SVGTextElement, unknown, null, undefined> | null>(null);
   const headerRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
@@ -58,9 +60,9 @@ export default function RaceChart({ config, isPlaying, currentTimeIndex, onTimeI
   }, []);
 
   useEffect(() => {
-    if (!svgRef.current) return;
+    if (!internalSvgRef.current) return;
 
-    const svg = d3.select(svgRef.current);
+    const svg = d3.select(internalSvgRef.current);
     svg.selectAll('.static-layer').remove();
 
     const defs = svg.append('defs').attr('class', 'static-layer');
@@ -160,7 +162,7 @@ export default function RaceChart({ config, isPlaying, currentTimeIndex, onTimeI
   }, [dimensions, dateGroups, config, isPlaying]);
 
   const raceProps = {
-    svgRef,
+    svgRef: internalSvgRef,
     config,
     isPlaying,
     currentTimeIndex,
@@ -214,7 +216,7 @@ export default function RaceChart({ config, isPlaying, currentTimeIndex, onTimeI
         </div>
       </div>
       
-      <svg ref={svgRef} width="100%" height="100%" viewBox={`0 0 ${dimensions.width} ${dimensions.height}`} preserveAspectRatio="xMidYMid meet" className="block relative z-0" />
+      <svg ref={internalSvgRef} width="100%" height="100%" viewBox={`0 0 ${dimensions.width} ${dimensions.height}`} preserveAspectRatio="xMidYMid meet" className="block relative z-0" />
       
       {config.type === 'bar' && <BarRace {...raceProps} />}
       {config.type === 'line' && <LineRace {...raceProps} />}
@@ -231,4 +233,6 @@ export default function RaceChart({ config, isPlaying, currentTimeIndex, onTimeI
       )}
     </div>
   );
-}
+});
+
+export default RaceChart;

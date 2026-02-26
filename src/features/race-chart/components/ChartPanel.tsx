@@ -9,6 +9,8 @@ import * as d3 from 'd3';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useAnimationEngine } from '../hooks/useAnimationEngine';
 import { useOrientation } from '../hooks/useOrientation';
+import { Muxer, ArrayBufferTarget } from 'mp4-muxer';
+import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 
 interface ChartPanelProps {
   config: ChartConfig;
@@ -22,6 +24,8 @@ export default function ChartPanel({ config, onConfigChange, onRemove }: ChartPa
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState<'preview' | 'studio'>('preview');
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const { orientation, isMobile } = useOrientation();
 
   // Force preview mode in landscape mobile
@@ -172,39 +176,207 @@ export default function ChartPanel({ config, onConfigChange, onRemove }: ChartPa
   }, [config.data]);
 
   const handleExportVideo = async () => {
+    if (!svgRef.current || !canvasRef.current) return;
+    
+    if (typeof VideoEncoder === 'undefined') {
+      alert('Video export is not supported in this browser. Please use Chrome, Edge, or a recent version of Firefox/Safari.');
+      return;
+    }
+
     setIsExporting(true);
     setExportProgress(0);
     setExportResult(null);
-    
-    // Simulate export process
-    for (let i = 0; i <= 100; i += 5) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      setExportProgress(i / 100);
+    engine.pause();
+    engine.setTimeIndex(0);
+
+    try {
+      const width = 1920;
+      const height = 1080;
+      const fps = 30;
+      
+      const durationMs = (totalFrames - 1) * config.duration / speed;
+      const totalVideoFrames = Math.ceil(durationMs / 1000 * fps);
+      const step = (totalFrames - 1) / totalVideoFrames;
+      
+      const muxer = new Muxer({
+        target: new ArrayBufferTarget(),
+        video: {
+          codec: 'avc',
+          width,
+          height,
+        },
+        firstTimestampBehavior: 'offset',
+        fastStart: 'in-memory',
+      });
+
+      const videoEncoder = new VideoEncoder({
+        output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+        error: (e) => console.error(e)
+      });
+
+      videoEncoder.configure({
+        codec: 'avc1.42001f',
+        width,
+        height,
+        bitrate: 5_000_000,
+        framerate: fps,
+      });
+
+      const canvas = canvasRef.current;
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d', { alpha: false })!;
+
+      const frameDuration = 1000000 / fps;
+
+      for (let f = 0; f < totalVideoFrames; f++) {
+        const engineIndex = f * step;
+        
+        window.dispatchEvent(new CustomEvent('time-update', { detail: engineIndex }));
+        
+        // Wait for D3 updates to propagate
+        await new Promise(r => setTimeout(r, 10));
+
+        const svgData = new XMLSerializer().serializeToString(svgRef.current);
+        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(svgBlob);
+        
+        const img = new Image();
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = url;
+        });
+
+        ctx.fillStyle = config.theme === 'dark' ? '#000' : '#fff';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        const frame = new VideoFrame(canvas, { 
+          timestamp: f * frameDuration,
+          duration: frameDuration
+        });
+        
+        videoEncoder.encode(frame, { keyFrame: f % 30 === 0 });
+        frame.close();
+        
+        URL.revokeObjectURL(url);
+
+        setExportProgress(f / totalVideoFrames);
+        
+        // Yield to main thread to keep UI responsive
+        await new Promise(r => setTimeout(r, 0));
+      }
+
+      await videoEncoder.flush();
+      muxer.finalize();
+
+      const { buffer } = muxer.target;
+      const blob = new Blob([buffer], { type: 'video/mp4' });
+      const url = URL.createObjectURL(blob);
+
+      setExportResult({ type: 'video', url });
+      
+    } catch (err) {
+      console.error(err);
+      alert('Export failed: ' + (err as any).message);
+    } finally {
+      setIsExporting(false);
+      engine.setTimeIndex(0);
     }
-    
-    setIsExporting(false);
-    setExportResult({ type: 'video', url: '#' }); // Simulated URL
   };
 
   const handleExportGif = async () => {
+    if (!svgRef.current || !canvasRef.current) return;
+
     setIsExporting(true);
     setExportProgress(0);
     setExportResult(null);
+    engine.pause();
+    engine.setTimeIndex(0);
     
-    // Simulate export process
-    for (let i = 0; i <= 100; i += 10) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      setExportProgress(i / 100);
+    try {
+      // Use smaller resolution for GIF to avoid huge files and slow processing
+      const width = 800;
+      const height = 450;
+      const fps = 15; // Lower FPS for GIF
+      
+      const durationMs = (totalFrames - 1) * config.duration / speed;
+      const totalGifFrames = Math.ceil(durationMs / 1000 * fps);
+      const step = (totalFrames - 1) / totalGifFrames;
+      
+      const gif = GIFEncoder();
+      
+      const canvas = canvasRef.current;
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+
+      for (let f = 0; f < totalGifFrames; f++) {
+        const engineIndex = f * step;
+        
+        window.dispatchEvent(new CustomEvent('time-update', { detail: engineIndex }));
+        
+        await new Promise(r => setTimeout(r, 0));
+
+        const svgData = new XMLSerializer().serializeToString(svgRef.current);
+        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(svgBlob);
+        
+        const img = new Image();
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = url;
+        });
+
+        ctx.fillStyle = config.theme === 'dark' ? '#000' : '#fff';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        const { data } = ctx.getImageData(0, 0, width, height);
+        const palette = quantize(data, 256);
+        const index = applyPalette(data, palette);
+        
+        gif.writeFrame(index, width, height, { palette, delay: 1000 / fps });
+        
+        URL.revokeObjectURL(url);
+
+        setExportProgress(f / totalGifFrames);
+        
+        await new Promise(r => setTimeout(r, 0));
+      }
+      
+      gif.finish();
+      
+      const buffer = gif.bytes();
+      const blob = new Blob([buffer], { type: 'image/gif' });
+      const url = URL.createObjectURL(blob);
+      
+      setExportResult({ type: 'gif', url });
+
+    } catch (err) {
+      console.error(err);
+      alert('GIF Export failed: ' + (err as any).message);
+    } finally {
+      setIsExporting(false);
+      engine.setTimeIndex(0);
     }
-    
-    setIsExporting(false);
-    setExportResult({ type: 'gif', url: '#' }); // Simulated URL
   };
 
   const handleDownload = () => {
     if (exportResult) {
-      alert(`Downloading ${exportResult.type === 'video' ? 'MP4' : 'GIF'} file... (Simulation)`);
-      setExportResult(null);
+      const a = document.createElement('a');
+      a.href = exportResult.url;
+      a.download = `${config.title || 'race-chart'}.${exportResult.type === 'video' ? 'mp4' : 'gif'}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      if (exportResult.type === 'video') {
+         // Keep URL for re-download if needed, or revoke later?
+         // URL.revokeObjectURL(exportResult.url);
+      }
     }
   };
 
@@ -218,6 +390,7 @@ export default function ChartPanel({ config, onConfigChange, onRemove }: ChartPa
 
   return (
     <div className="flex flex-col xl:flex-row gap-8 xl:gap-12">
+      <canvas ref={canvasRef} className="hidden" />
       {/* Mobile Tab Switcher - Hide in landscape */}
       {!(isMobile && orientation === 'landscape') && (
         <div className="xl:hidden flex p-1 bg-zinc-100 dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 mb-4 sticky top-4 z-50 shadow-lg">
@@ -293,6 +466,7 @@ export default function ChartPanel({ config, onConfigChange, onRemove }: ChartPa
                     : 'aspect-video'
               }`}>
                 <RaceChart
+                  ref={svgRef}
                   config={config}
                   isPlaying={isPlaying}
                   currentTimeIndex={currentTimeIndex}
