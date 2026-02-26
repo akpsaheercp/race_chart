@@ -4,6 +4,7 @@ export interface DataPoint {
   value: number;
   category?: string;
   entity?: string; // For multi-entity datasets like USA vs China
+  timestamp?: number;
 }
 
 export interface ChartConfig {
@@ -11,8 +12,10 @@ export interface ChartConfig {
   title: string;
   subtitle: string;
   caption: string;
-  type: 'bar' | 'column' | 'stacked' | 'bubble' | 'pie';
+  type: 'bar' | 'column' | 'stacked' | 'line' | 'area' | 'bubble' | 'pie' | 'stacked-bar';
+  orientation?: 'horizontal' | 'vertical';
   data: DataPoint[];
+  secondaryData?: DataPoint[];
   colors: Record<string, string>;
   maxBars: number;
   duration: number;

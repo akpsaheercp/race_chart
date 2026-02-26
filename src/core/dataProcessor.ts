@@ -1,28 +1,103 @@
 import Papa from 'papaparse';
-import { DataPoint } from '../types';
+import { DataPoint, ChartConfig } from '../types';
 import * as d3 from 'd3';
 
-export const parseCSV = (csvText: string): DataPoint[] => {
-  const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+export const parseCSV = (csvText: string): { data: DataPoint[], config: Partial<ChartConfig> } => {
+  const config: Partial<ChartConfig> = {};
+  
+  // Extract metadata lines starting with #
+  const lines = csvText.split('\n');
+  const dataLines = [];
+  for (const line of lines) {
+    if (line.trim().startsWith('#')) {
+      const match = line.match(/^#([^,=]+)[,=](.+)$/);
+      if (match) {
+        const key = match[1].trim() as keyof ChartConfig;
+        const value = match[2].trim();
+        if (key === 'duration' || key === 'maxBars' || key === 'fps') {
+          (config as any)[key] = parseInt(value, 10);
+        } else if (key === 'interpolation') {
+          (config as any)[key] = value.toLowerCase() === 'true';
+        } else {
+          (config as any)[key] = value;
+        }
+      }
+    } else {
+      dataLines.push(line);
+    }
+  }
+  
+  const cleanCsvText = dataLines.join('\n');
+  const parsed = Papa.parse(cleanCsvText, { header: true, skipEmptyLines: true });
   const data: DataPoint[] = [];
 
-  if (parsed.data.length === 0) return data;
+  if (parsed.data.length === 0) return { data, config };
 
   const columns = Object.keys(parsed.data[0] as object);
   const dateCol = columns[0];
 
-  parsed.data.forEach((row: any) => {
-    const date = row[dateCol];
+  if (!dateCol) throw new Error("No columns found in CSV");
+
+  const parsedRows = parsed.data.map((row: any, index: number) => {
+    const dateStr = row[dateCol];
+    if (!dateStr) throw new Error(`Missing date at row ${index + 1}`);
+    
+    let dateObj = new Date(dateStr);
+    
+    // Try to parse DD/MM/YY, DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD
+    const parts = dateStr.split(/[-/]/);
+    if (parts.length === 3) {
+      let [p1, p2, p3] = parts;
+      
+      // If p3 is year (2 or 4 digits)
+      if (p3.length === 2 || p3.length === 4) {
+        let y = p3;
+        if (y.length === 2) y = (parseInt(y) < 50 ? '20' : '19') + y;
+        
+        // Assume DD/MM/YYYY by default
+        let d = p1, m = p2;
+        if (parseInt(p2) > 12) {
+          // MM/DD/YYYY
+          m = p1;
+          d = p2;
+        }
+        
+        const parsedDate = new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T00:00:00`);
+        if (!isNaN(parsedDate.getTime())) {
+          dateObj = parsedDate;
+        }
+      } else if (p1.length === 4) {
+        // YYYY-MM-DD
+        const parsedDate = new Date(`${p1}-${p2.padStart(2, '0')}-${p3.padStart(2, '0')}T00:00:00`);
+        if (!isNaN(parsedDate.getTime())) {
+          dateObj = parsedDate;
+        }
+      }
+    }
+    
+    if (isNaN(dateObj.getTime())) {
+      throw new Error(`Invalid date format at row ${index + 1}: ${dateStr}. Please use DD/MM/YYYY or YYYY-MM-DD.`);
+    }
+
+    return { row, dateObj, dateStr };
+  });
+
+  // Sort chronologically
+  parsedRows.sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
+
+  parsedRows.forEach(({ row, dateStr, dateObj }) => {
     for (let i = 1; i < columns.length; i++) {
       const name = columns[i];
-      const value = parseFloat(row[name]);
+      const valueStr = row[name];
+      const cleanValue = typeof valueStr === 'string' ? valueStr.replace(/,/g, '') : valueStr;
+      const value = parseFloat(cleanValue);
       if (!isNaN(value)) {
-        data.push({ date, name, value });
+        data.push({ date: dateStr, name, value, timestamp: dateObj.getTime() });
       }
     }
   });
 
-  return data;
+  return { data, config };
 };
 
 export const generateColors = (names: string[]): Record<string, string> => {

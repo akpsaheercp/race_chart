@@ -11,7 +11,7 @@ interface ExportPanelProps {
 }
 
 export default function ExportPanel({ onExportVideo, onExportGif, isExporting, progress, totalFrames, fps }: ExportPanelProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const duration = totalFrames / (fps / 10); // Rough estimate of video length in seconds
   const estRenderTime = totalFrames * 0.2; // Estimate 0.2s per frame for rendering
 

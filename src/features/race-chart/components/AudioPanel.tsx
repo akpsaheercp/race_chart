@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Mic, Music, Volume2, Play, Square, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Mic, Music, Volume2, Play, Square, Loader2, ChevronDown, ChevronRight, Upload } from 'lucide-react';
 import { AudioConfig } from '../../../types';
 import { GoogleGenAI, Modality } from '@google/genai';
 
@@ -9,14 +9,23 @@ interface AudioPanelProps {
 }
 
 export default function AudioPanel({ config, onConfigChange }: AudioPanelProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (key: keyof AudioConfig, value: any) => {
     onConfigChange({ ...config, [key]: value });
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      handleChange('bgmUrl', url);
+    }
   };
 
   const generateVoiceover = async () => {
@@ -155,13 +164,29 @@ export default function AudioPanel({ config, onConfigChange }: AudioPanelProps) 
                 <Music className="w-3 h-3" />
                 Music URL
               </label>
-              <input
-                type="text"
-                value={config.bgmUrl || ''}
-                onChange={(e) => handleChange('bgmUrl', e.target.value)}
-                placeholder="https://example.com/music.mp3"
-                className="w-full p-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/50 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={config.bgmUrl || ''}
+                  onChange={(e) => handleChange('bgmUrl', e.target.value)}
+                  placeholder="https://example.com/music.mp3"
+                  className="flex-1 p-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/50 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                />
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  accept="audio/*"
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-2.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 rounded-xl transition-colors"
+                  title="Upload Audio"
+                >
+                  <Upload className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <div className="flex items-center gap-4 p-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-200 dark:border-zinc-800">

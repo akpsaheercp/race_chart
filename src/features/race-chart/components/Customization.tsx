@@ -23,8 +23,8 @@ interface CustomizationProps {
 }
 
 export default function Customization({ config, onConfigChange }: CustomizationProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [expandedSection, setExpandedSection] = useState<string | null>('content');
 
   const handleChange = (key: keyof ChartConfig, value: any) => {
     onConfigChange({ ...config, [key]: value });
@@ -125,8 +125,8 @@ export default function Customization({ config, onConfigChange }: CustomizationP
               <div className="p-4 space-y-4 border-x border-b border-zinc-100 dark:border-zinc-800/50 rounded-b-xl bg-white dark:bg-black/20 animate-in fade-in slide-in-from-top-2 duration-200">
                 <div>
                   <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 mb-1.5 uppercase tracking-wider">Chart Type</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(['bar', 'column', 'pie'] as const).map((type) => (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {(['bar', 'stacked-bar', 'line', 'area', 'bubble', 'pie'] as const).map((type) => (
                       <button
                         key={type}
                         onClick={() => handleChange('type', type)}
@@ -136,11 +136,30 @@ export default function Customization({ config, onConfigChange }: CustomizationP
                             : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'
                         }`}
                       >
-                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                        {type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </button>
                     ))}
                   </div>
                 </div>
+                {['bar', 'line', 'area'].includes(config.type) && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 mb-1.5 uppercase tracking-wider">Orientation</label>
+                    <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                      <button
+                        onClick={() => handleChange('orientation', 'horizontal')}
+                        className={`flex-1 p-1.5 rounded-lg text-xs transition-all ${(!config.orientation || config.orientation === 'horizontal') ? 'bg-white dark:bg-zinc-800 shadow-sm text-zinc-900 dark:text-zinc-100 font-semibold' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
+                      >
+                        Horizontal
+                      </button>
+                      <button
+                        onClick={() => handleChange('orientation', 'vertical')}
+                        className={`flex-1 p-1.5 rounded-lg text-xs transition-all ${config.orientation === 'vertical' ? 'bg-white dark:bg-zinc-800 shadow-sm text-zinc-900 dark:text-zinc-100 font-semibold' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
+                      >
+                        Vertical
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <div>
                   <label className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 mb-1.5 uppercase tracking-wider">Max Visible Bars</label>
                   <div className="flex items-center gap-4">

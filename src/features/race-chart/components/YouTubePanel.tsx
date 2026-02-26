@@ -12,7 +12,7 @@ interface YouTubePanelProps {
 }
 
 export default function YouTubePanel({ metadata, onMetadataChange, onUpload, isUploading, chartTitle }: YouTubePanelProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
