@@ -266,8 +266,8 @@ export default function BubbleRace({ svgRef, config, isPlaying, currentTimeIndex
                    .duration(800)
                    .attr('opacity', 0)
                    .attr('r', 0)
-                   .attr('cx', d => d.cx * 1.2) // Expand out
-                   .attr('cy', d => d.cy * 1.2)
+                   .attr('cx', (d: any) => d.cx * 1.2) // Expand out
+                   .attr('cy', (d: any) => d.cy * 1.2)
                    .remove();
            } else {
                dots.exit().remove();

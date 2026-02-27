@@ -126,7 +126,7 @@ export default function PieRace({ svgRef, config, isPlaying, currentTimeIndex, d
            const GRID_SIZE = DOT_SIZE + DOT_GAP;
            const DOT_RADIUS = DOT_SIZE / 2;
            
-           const r = outerRadius;
+           const r = radius;
            const diameter = r * 2;
            const cols = Math.floor(diameter / GRID_SIZE);
            const rows = Math.floor(diameter / GRID_SIZE);
@@ -151,7 +151,7 @@ export default function PieRace({ svgRef, config, isPlaying, currentTimeIndex, d
                    if (angle < 0) angle += 2 * Math.PI; // Normalize to 0-2PI
                    
                    // Check radius
-                   if (dist >= innerRadius && dist <= outerRadius - DOT_RADIUS) {
+                   if (dist >= radius * 0.5 && dist <= radius - DOT_RADIUS) {
                        // Check angle
                        // Need to handle angle wrapping if necessary, but d3 arcs usually are 0-2PI
                        // d3 arc: 0 at 12 o'clock? No, 0 at 12 o'clock is standard for d3.arc() but atan2 is from 3 o'clock.

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="102" fill="#0b0b12"/>
+  <rect x="128" y="153" width="51" height="204" fill="#7c6fff"/>
+  <rect x="204" y="204" width="51" height="153" fill="#ff5f8a"/>
+  <rect x="281" y="256" width="51" height="102" fill="#38e8a0"/>
+  <path d="M384 204L435 255L384 306Z" fill="#ffffff"/>
+  <text x="256" y="435" font-family="sans-serif" font-weight="bold" font-size="102" fill="#ffffff" text-anchor="middle">RG</text>
+</svg>

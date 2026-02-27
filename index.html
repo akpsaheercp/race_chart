@@ -2,13 +2,66 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Race Chart Studio</title>
+    <title>RaceGraph Studio</title>
     <meta name="description" content="Create stunning bar chart races and more" />
-    <meta name="theme-color" content="#ffffff" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/manifest.webmanifest" />
+    
+    <!-- PWA Core -->
+    <meta name="application-name" content="RaceGraph Studio">
+    <meta name="theme-color" content="#7c6fff" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#6b5fee" media="(prefers-color-scheme: light)">
+    <meta name="color-scheme" content="dark light">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <!-- Apple PWA (iOS Safari) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="RaceGraph">
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+    <link rel="apple-touch-startup-image" href="/icons/pwa-512.png">
+
+    <!-- Apple Splash Screens for common iOS sizes -->
+    <link rel="apple-touch-startup-image" 
+      href="/splash/apple-splash-2048-2732.png"
+      media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image"
+      href="/splash/apple-splash-1170-2532.png"  
+      media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)">
+
+    <!-- Microsoft PWA -->
+    <meta name="msapplication-TileColor" content="#7c6fff">
+    <meta name="msapplication-TileImage" content="/icons/pwa-192.png">
+    <meta name="msapplication-config" content="/browserconfig.xml">
+
+    <!-- Open Graph (for sharing) -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="RaceGraph Studio — Race Chart Animator">
+    <meta property="og:description" content="Create animated race charts beautifully">
+    <meta property="og:image" content="/icons/pwa-512.png">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="RaceGraph Studio">
+    <meta name="twitter:image" content="/icons/pwa-512.png">
+
+    <!-- Favicon set -->
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/pwa-64.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://generativelanguage.googleapis.com">
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+
+    <style>
+      body {
+        margin: 0;
+        background-color: #0b0b12;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

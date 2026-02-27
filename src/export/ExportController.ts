@@ -50,7 +50,7 @@ export class VideoExportController {
     return { w: this.settings.customWidth, h: this.settings.customHeight };
   }
 
-  async startExport(svgElement: SVGSVGElement, totalDataFrames: number, chartType: string): Promise<void> {
+  async startExport(svgElement: SVGSVGElement, totalDataFrames: number, chartType: string, threeCanvas?: HTMLCanvasElement | null): Promise<void> {
     this.isRecording = true;
     this.isPaused = false;
     this.totalFrames = totalDataFrames;
@@ -88,7 +88,28 @@ export class VideoExportController {
         
         await new Promise(r => setTimeout(r, 10)); // Wait for D3
 
+        // Render SVG to canvas
         await renderSvgToCanvas(svgElement, this.offscreenCanvas, w, h, this.settings.theme);
+
+        // If 3D, composite the 3D canvas
+        if (threeCanvas) {
+          const ctx = this.offscreenCanvas.getContext('2d');
+          if (ctx) {
+            // Draw 3D canvas behind the SVG content (which was already drawn with background)
+            // Wait, renderSvgToCanvas draws background.
+            // If 3D, we should draw 3D canvas FIRST, then SVG (without background if possible)
+            // Or just draw 3D canvas on top if it has transparency? 
+            // Usually 3D is the background.
+            
+            // Let's re-think:
+            // 1. Fill background color
+            // 2. Draw 3D canvas
+            // 3. Draw SVG (with transparent background)
+            
+            // I need to modify renderSvgToCanvas to support transparent background.
+            await renderSvgToCanvas(svgElement, this.offscreenCanvas, w, h, this.settings.theme, threeCanvas);
+          }
+        }
 
         if (this.method === 'frames-zip') {
           await this.exporter.captureFrameAsBlob(this.offscreenCanvas);

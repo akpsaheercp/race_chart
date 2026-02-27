@@ -345,7 +345,7 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
                    .duration(800)
                    .attr('opacity', 0)
                    .attr('r', 0)
-                   .attr('cx', d => isVertical ? d.cx : d.cx - 20) // Drift back
+                   .attr('cx', (d: any) => isVertical ? d.cx : d.cx - 20) // Drift back
                    .remove();
            } else {
                dots.exit()
@@ -479,37 +479,21 @@ export default function BarRace({ svgRef, config, isPlaying, currentTimeIndex, d
           if (iconUrl && config.showIcons) {
             const yPos = (scaleBand.bandwidth() - iconSize) / 2;
             
-            if (iconPosition === 'before-name') {
-               if (iconPosition === 'end-of-bar') {
-                 icon.attr('x', state.size + 5)
-                     .attr('y', yPos);
-                 
-                 // Push value text further right
-                 valueText.attr('x', state.size + iconSize + 10 + (isSmallScreen ? 8 : 16));
-               } else if (iconPosition === 'after-name') {
-                 icon.attr('x', -iconSize - 5)
-                     .attr('y', yPos);
-                 labelX -= (iconSize + 5);
-               } else {
-                 // before-name (default)
-                 // Fallback: Place at end of bar.
-                 if (iconPosition === 'after-name') {
-                    icon.attr('x', -iconSize - 8).attr('y', yPos);
-                    labelX -= (iconSize + 8);
-                 } else if (iconPosition === 'before-name') {
-                    // We can't do this well without metrics. 
-                    // Fallback: Place at end of bar.
-                    icon.attr('x', state.size + 5).attr('y', yPos);
-                    valueText.attr('x', state.size + iconSize + 10 + (isSmallScreen ? 8 : 16));
-                 } else {
-                    // end-of-bar
-                    icon.attr('x', state.size + 5).attr('y', yPos);
-                    valueText.attr('x', state.size + iconSize + 10 + (isSmallScreen ? 8 : 16));
-                 }
-               }
+            if (iconPosition === 'end-of-bar') {
+              icon.attr('x', state.size + 5)
+                  .attr('y', yPos);
+              valueText.attr('x', state.size + iconSize + 10 + (isSmallScreen ? 8 : 16));
+            } else if (iconPosition === 'after-name') {
+              icon.attr('x', -iconSize - 5)
+                  .attr('y', yPos);
+              labelX -= (iconSize + 5);
+              valueText.attr('x', state.size + (isSmallScreen ? 8 : 16));
             } else {
-               // No icon, standard value position
-               valueText.attr('x', state.size + (isSmallScreen ? 8 : 16));
+              // before-name (default)
+              icon.attr('x', labelX - iconSize - 5)
+                  .attr('y', yPos);
+              labelX -= (iconSize + 5);
+              valueText.attr('x', state.size + (isSmallScreen ? 8 : 16));
             }
           } else {
              valueText.attr('x', state.size + (isSmallScreen ? 8 : 16));

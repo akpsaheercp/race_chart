@@ -11,7 +11,8 @@ export async function renderSvgToCanvas(
   canvas: HTMLCanvasElement, 
   width: number, 
   height: number, 
-  theme: string
+  theme: string,
+  threeCanvas?: HTMLCanvasElement | null
 ): Promise<void> {
   const ctx = canvas.getContext('2d', { alpha: false });
   if (!ctx) return;
@@ -32,8 +33,14 @@ export async function renderSvgToCanvas(
   });
 
   // Draw to canvas
-  ctx.fillStyle = theme === 'dark' ? '#000' : '#fff';
+  ctx.fillStyle = theme === 'dark' ? '#0b0b12' : '#f8f9fa';
   ctx.fillRect(0, 0, width, height);
+
+  // If threeCanvas is provided, draw it first
+  if (threeCanvas) {
+    ctx.drawImage(threeCanvas, 0, 0, width, height);
+  }
+
   ctx.drawImage(img, 0, 0, width, height);
   
   // Cleanup

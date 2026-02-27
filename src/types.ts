@@ -12,7 +12,7 @@ export interface ChartConfig {
   title: string;
   subtitle: string;
   caption: string;
-  type: 'bar' | 'column' | 'stacked' | 'line' | 'area' | 'bubble' | 'pie' | 'stacked-bar' | 'map' | 'treemap' | 'radial' | 'bump' | 'stacked-area' | 'scatter' | 'spiral' | 'network';
+  type: 'bar' | 'column' | 'stacked' | 'line' | 'area' | 'bubble' | 'pie' | 'stacked-bar' | 'map' | 'treemap' | 'radial' | 'bump' | 'stacked-area' | 'scatter' | 'spiral' | 'network' | 'bar-3d' | 'cylinder-3d' | 'bubble-3d' | 'podium-3d' | 'terrain-3d' | 'spiral-3d';
   orientation?: 'horizontal' | 'vertical';
   data: DataPoint[];
   secondaryData?: DataPoint[];
@@ -35,6 +35,15 @@ export interface ChartConfig {
   }>;
   showLegend: boolean;
   legendPosition: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  
+  // 3D Settings
+  threeQuality?: 'low' | 'medium' | 'high';
+  threeAutoRotate?: boolean;
+  threeShowGrid?: boolean;
+  threeCameraDistance?: number;
+  threeCameraAngle?: number;
+  threeBloom?: boolean;
+  threeShadows?: boolean;
   
   // Text Styling
   showLabels: boolean;

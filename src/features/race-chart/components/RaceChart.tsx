@@ -15,6 +15,18 @@ import ScatterRace from './races/ScatterRace';
 import SpiralRace from './races/SpiralRace';
 import NetworkRace from './races/NetworkRace';
 
+import { Maximize } from 'lucide-react';
+import { 
+  ThreeSetup, 
+  ThreeAnimationBridge, 
+  Bar3DRace, 
+  Cylinder3DRace, 
+  Bubble3DRace, 
+  Podium3DRace, 
+  Terrain3DRace, 
+  Spiral3DRace 
+} from '../../../3d';
+
 interface RaceChartProps {
   config: ChartConfig;
   isPlaying: boolean;
@@ -26,33 +38,101 @@ interface RaceChartProps {
 export const RaceChart = React.forwardRef<SVGSVGElement, RaceChartProps>(({ config, isPlaying, currentTimeIndex, onTimeIndexChange, speed }, ref) => {
   const internalSvgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const threeContainerRef = useRef<HTMLDivElement>(null);
+  const threeSetupRef = useRef<ThreeSetup | null>(null);
+  const threeBridgeRef = useRef<ThreeAnimationBridge | null>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 500 });
-  
-  React.useImperativeHandle(ref, () => internalSvgRef.current!);
-  
-  const dateLabelRef = useRef<d3.Selection<SVGTextElement, unknown, null, undefined> | null>(null);
-  const headerRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
+  const [isThreeLoading, setIsThreeLoading] = useState(false);
 
   const dateGroups = useMemo(() => {
     const filteredData = config.entityFilter 
       ? config.data.filter(d => d.entity === config.entityFilter)
       : config.data;
 
-    const groups = d3.group(filteredData, d => d.date);
+    const groups = d3.group(filteredData, (d: DataPoint) => d.date);
     const dates = Array.from(groups.keys()).sort((a, b) => {
-      const valA = groups.get(a)?.[0]?.timestamp || 0;
-      const valB = groups.get(b)?.[0]?.timestamp || 0;
+      const valA = (groups.get(a)?.[0] as any)?.timestamp || 0;
+      const valB = (groups.get(b)?.[0] as any)?.timestamp || 0;
       return valA - valB;
     });
     
     return dates.map(date => {
       const values = (groups.get(date) || []) as DataPoint[];
       return {
-        date,
+        date: date as string,
         values: values.sort((a, b) => d3.descending(a.value, b.value))
       };
     });
   }, [config.data, config.entityFilter]);
+  
+  const is3D = config.type.endsWith('-3d');
+
+  useEffect(() => {
+    if (is3D && threeContainerRef.current && !threeSetupRef.current) {
+      setIsThreeLoading(true);
+      // Small delay to show loading screen
+      setTimeout(() => {
+        const setup = new ThreeSetup({
+          container: threeContainerRef.current!,
+          theme: config.theme,
+          antialias: config.threeQuality !== 'low',
+          shadows: config.threeShadows !== false
+        });
+        setup.startAnimation();
+        threeSetupRef.current = setup;
+        threeBridgeRef.current = new ThreeAnimationBridge(setup);
+        setIsThreeLoading(false);
+      }, 500);
+    }
+
+    return () => {
+      if (threeSetupRef.current) {
+        threeSetupRef.current.dispose();
+        threeSetupRef.current = null;
+      }
+      if (threeBridgeRef.current) {
+        threeBridgeRef.current.dispose();
+        threeBridgeRef.current = null;
+      }
+    };
+  }, [is3D]);
+
+  // Update 3D Chart when type or config changes
+  useEffect(() => {
+    if (is3D && threeSetupRef.current && threeBridgeRef.current) {
+      let chart;
+      switch (config.type) {
+        case 'bar-3d': chart = new Bar3DRace(threeSetupRef.current.scene, config, dateGroups); break;
+        case 'cylinder-3d': chart = new Cylinder3DRace(threeSetupRef.current.scene, config, dateGroups); break;
+        case 'bubble-3d': chart = new Bubble3DRace(threeSetupRef.current.scene, config, dateGroups); break;
+        case 'podium-3d': chart = new Podium3DRace(threeSetupRef.current.scene, config, dateGroups); break;
+        case 'terrain-3d': chart = new Terrain3DRace(threeSetupRef.current.scene, config, dateGroups); break;
+        case 'spiral-3d': chart = new Spiral3DRace(threeSetupRef.current.scene, config, dateGroups); break;
+      }
+      if (chart) {
+        threeBridgeRef.current.setChart(chart);
+      }
+    }
+  }, [config.type, is3D, dateGroups, config.theme]);
+
+  // Update 3D Theme
+  useEffect(() => {
+    if (threeSetupRef.current) {
+      threeSetupRef.current.updateTheme(config.theme);
+    }
+  }, [config.theme]);
+
+  // Update 3D Auto-Rotate
+  useEffect(() => {
+    if (threeSetupRef.current && threeSetupRef.current.controls) {
+      threeSetupRef.current.controls.autoRotate = !!config.threeAutoRotate;
+    }
+  }, [config.threeAutoRotate]);
+
+  React.useImperativeHandle(ref, () => internalSvgRef.current!);
+  
+  const dateLabelRef = useRef<d3.Selection<SVGTextElement, unknown, null, undefined> | null>(null);
+  const headerRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
 
   useEffect(() => {
     const observer = new ResizeObserver(entries => {
@@ -136,7 +216,7 @@ export const RaceChart = React.forwardRef<SVGSVGElement, RaceChartProps>(({ conf
     const legendG = svg.append('g')
       .attr('class', 'legend-layer');
 
-    const uniqueEntities = Array.from(new Set(config.data.map(d => d.name))).sort();
+    const uniqueEntities = Array.from(new Set(config.data.map(d => d.name))).sort() as string[];
     const itemHeight = 20;
     const itemSpacing = 5;
     const symbolSize = 12;
@@ -176,7 +256,7 @@ export const RaceChart = React.forwardRef<SVGSVGElement, RaceChartProps>(({ conf
         .attr('stroke', config.theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)');
     }
 
-    uniqueEntities.forEach((entity, i) => {
+    uniqueEntities.forEach((entity: string, i: number) => {
       const g = legendG.append('g')
         .attr('transform', `translate(0, ${i * (itemHeight + itemSpacing)})`);
         
@@ -323,7 +403,39 @@ export const RaceChart = React.forwardRef<SVGSVGElement, RaceChartProps>(({ conf
         </div>
       </div>
       
-      <svg ref={internalSvgRef} width="100%" height="100%" viewBox={`0 0 ${dimensions.width} ${dimensions.height}`} preserveAspectRatio="xMidYMid meet" className="block relative z-0" />
+      <svg ref={internalSvgRef} width="100%" height="100%" viewBox={`0 0 ${dimensions.width} ${dimensions.height}`} preserveAspectRatio="xMidYMid meet" className={`block relative z-0 ${is3D ? 'pointer-events-none' : ''}`} />
+      
+      {is3D && (
+        <div className="absolute top-6 right-6 z-20 flex flex-col gap-2">
+          <button 
+            onClick={() => threeSetupRef.current?.fitCameraToScene(1.5)}
+            className={`p-2 rounded-full backdrop-blur-md border transition-all hover:scale-110 active:scale-95 ${
+              config.theme === 'dark' 
+                ? 'bg-black/40 border-white/10 text-white/60 hover:text-white hover:bg-black/60' 
+                : 'bg-white/40 border-black/10 text-black/60 hover:text-black hover:bg-white/60'
+            }`}
+            title="Fit View"
+          >
+            <Maximize size={18} />
+          </button>
+        </div>
+      )}
+
+      {is3D && (
+        <div 
+          ref={threeContainerRef} 
+          className="absolute inset-0 z-0"
+          style={{ cursor: 'grab' }}
+        />
+      )}
+
+      {isThreeLoading && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md">
+          <div className="w-16 h-16 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-4"></div>
+          <div className="text-white font-bold tracking-widest text-sm animate-pulse">INITIALIZING 3D ENGINE...</div>
+          <div className="text-white/40 text-[10px] mt-2 font-mono uppercase">Three.js r128 • WebGL 1.0</div>
+        </div>
+      )}
       
       {config.type === 'bar' && <BarRace {...raceProps} />}
       {config.type === 'line' && <LineRace {...raceProps} />}

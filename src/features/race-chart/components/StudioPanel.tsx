@@ -15,7 +15,9 @@ import {
   Music,
   Share2,
   Database,
-  Users
+  Users,
+  Smartphone,
+  Box
 } from 'lucide-react';
 import { ChartConfig, AudioConfig, YouTubeMetadata, DataPoint } from '../../../types';
 import Customization from './Customization';
@@ -24,6 +26,8 @@ import ExportPanel from './ExportPanel';
 import YouTubePanel from './YouTubePanel';
 import DataInput from './DataInput';
 import EntityPanel from './EntityPanel';
+import PwaSettingsPanel from './PwaSettingsPanel';
+import ThreeSettingsPanel from './ThreeSettingsPanel';
 
 import { VideoExportController } from '../../../export/ExportController';
 
@@ -66,15 +70,17 @@ export default function StudioPanel({
   onDataLoaded,
   exportController
 }: StudioPanelProps) {
-  const [activeTab, setActiveTab] = useState<'source' | 'visuals' | 'entities' | 'audio' | 'export' | 'social'>('source');
+  const [activeTab, setActiveTab] = useState<'source' | 'visuals' | '3d' | 'entities' | 'audio' | 'export' | 'social' | 'pwa'>('source');
 
   const tabs = [
     { id: 'source', label: 'Source', icon: Database },
     { id: 'visuals', label: 'Visuals', icon: Palette },
+    { id: '3d', label: '3D', icon: Box },
     { id: 'entities', label: 'Entities', icon: Users },
     { id: 'audio', label: 'Audio', icon: Music },
     { id: 'export', label: 'Export', icon: Download },
     { id: 'social', label: 'Social', icon: Share2 },
+    { id: 'pwa', label: 'App', icon: Smartphone },
   ] as const;
 
   return (
@@ -122,6 +128,10 @@ export default function StudioPanel({
               <Customization config={config} onConfigChange={onConfigChange} />
             )}
 
+            {activeTab === '3d' && (
+              <ThreeSettingsPanel config={config} onConfigChange={onConfigChange} />
+            )}
+
             {activeTab === 'entities' && (
               <EntityPanel config={config} onConfigChange={onConfigChange} />
             )}
@@ -152,6 +162,10 @@ export default function StudioPanel({
                 isUploading={isUploading}
                 chartTitle={config.title}
               />
+            )}
+
+            {activeTab === 'pwa' && (
+              <PwaSettingsPanel />
             )}
           </div>
         </div>
